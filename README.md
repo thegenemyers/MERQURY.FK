@@ -41,7 +41,7 @@ copy-number spectrum plots for the pair.
 The width and height in inches of the plots are controlled by the -w and -h options and
 by default they are 6 x 4.5 inches.
 
-The maximum x coordinate (k-mer frequency) and y-coordinate (k-mer count) can be set
+The maximum x-coordinate (k-mer frequency) and y-coordinate (k-mer count) can be set
 in either an absolute or relative fashion.  If absolute one specifes the maxima as integer
 arguments to the -X and -Y options.  CN spectrum typically have peaks away from the origin.
 The x and y coordinates of the highest of these peaks, say x\*,y\* provide a relative
