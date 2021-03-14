@@ -89,11 +89,11 @@ CNspectra produces copy-number spectral plots for each assembly, a copy-number s
 The primary input arguments -- \<read>, \<asm1>, and \<asm2> if present -- are expected to be the root path names of FastK tables, histograms, and profiles.  Specifically, CNspectra expects
 to find:
 
-* <read>.hist & .ktab produced by <code>FastK -t1 [...] \<read data> -N\<read></code>
+* **\<read>.hist & .ktab** produced by <code>FastK -t1 [...] \<read_data> -N\<read></code>
 
-* <asm>.hist & .ktab & .prof produced by <code>FastK -t1 -p [...] \<assmebly> -N\<asm></code>
+* **\<asm>.ktab & .prof** produced by <code>FastK -t1 -p [...] \<assembly> -N\<asm></code>
 
-* <asm>.<read>.prof produced by <code>FastK -p:<read> [...] \<assembly> -N\<asm></code>
+* **\<asm>.\<read>.prof** produced by <code>FastK -p:<read> [...] \<assembly> -N\<asm></code>
 
 The primary output argument -- \<cout> -- is the root path name for all the output files
 produced by CNspectra.  Specifically, it *can* produce:
