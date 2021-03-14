@@ -55,8 +55,8 @@ The root path name for the output plots can be set with the -o option.  A suffix
 .st is added for the line, fill, and stack plots, respectively, followed by either .png or .pdf.
 If the -o option is not set, then the root path name is that of the \<asm> argument.
 
-If the -z option is set, then CNplot plots at 0, the # of k-mers in <asm>-<reads> broken down
-into those that are unique or not.
+If the -z option is set, then CNplot plots at 0, the # of k-mers in \<asm> - \<reads> broken down
+into those that are unique or those that are not.
 
 The -T option controls the number of threads used by FastK's "Logex" which is the dominant
 computational cost for CNplot.
@@ -78,8 +78,6 @@ asm1 or asm2, (b) in asm1 but not asm2, (c) in asm2 but not asm1, and (d) in bot
 asm2.  If asm2 is missing, then it looks at the spectra of the reads that are and are not
 in asm1.  The legend is appropriately labeled.
 
-All the options are completely analogous to CNplot.
-
 <a name="CNspectra"></a>
 
 ```
@@ -100,11 +98,11 @@ to find:
 The primary output argument -- \<cout> -- is the root path name for all the output files
 produced by CNspectra.  Specifically, it *can* produce:
 
-* **\<out>.\<asm>.spectra-cn.***: cn-spectra of \<asm>
+* **\<out>.\<asm>.spectra-cn.***: cn-spectra plots of \<asm>
 
-* **\<out>.spectra-cn.***: cn-spectra of the union of \<asm1> and \<asm2>
+* **\<out>.spectra-cn.***: cn-spectra plots of the union of \<asm1> and \<asm2>
 
-* **\<out>.sectra-asm.***: assembly spectra of the assemblies
+* **\<out>.sectra-asm.***: assembly spectra plots of the assemblies
 
 * **\<out>.\<asm>.qv**: error and qv table for each scaffold of \<asm>
 
@@ -114,6 +112,6 @@ produced by CNspectra.  Specifically, it *can* produce:
 
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
-If not plot types are set, then all 3 are produced.  Finally, the -T option controls
+If no plot types are set, then all 3 are produced.  Finally, the -T option controls
 the number of threaads used in those bits of CNspectra that are threaded.
 
