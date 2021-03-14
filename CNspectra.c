@@ -36,6 +36,7 @@ static char *Usage = " [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <o
 //    OUT.qv
 //    OUT.ASM[i].qv
 //    OUT.completeness-stat
+//    OUT.ASM_only.bed
 
 static char template[15] = "._CN.XXXX";
 

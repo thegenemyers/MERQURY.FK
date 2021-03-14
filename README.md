@@ -84,7 +84,7 @@ in asm1.  The legend is appropriately labeled.
 3. CNspectra [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <out>
 ```
 
-CNspectra produces copy-number spectral plots for each assembly, the union of both assemblies (if two are present), the assembly spectral plots, and qv's and completeness statistics, as well as a .bed file of potential error locations.
+CNspectra produces copy-number spectral plots for each assembly, a copy-number spectral plot of the union of both assemblies (if two are present), an assembly spectral plot, and tables of qv and completeness statistics, as well as a .bed file of potential error locations.
 
 The primary input arguments -- \<read>, \<asm1>, and \<asm2> if present -- are expected to be the root path names of FastK tables, histograms, and profiles.  Specifically, CNspectra expects
 to find:
@@ -110,8 +110,10 @@ produced by CNspectra.  Specifically, it *can* produce:
 
 * **\<out>.completeness-stat**: coverage of solid read k-mers by the assemblies and their union (if two).
 
+* **\<out>.\<asm>_only.bed**: a .bed file of the locations where the assembly has k-mer's not supported by the read data set.
+
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
 If no plot types are set, then all 3 are produced.  Finally, the -T option controls
-the number of threaads used in those bits of CNspectra that are threaded.
+the number of threads used in those bits of CNspectra that are threaded.
 
