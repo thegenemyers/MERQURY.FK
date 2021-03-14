@@ -1,9 +1,9 @@
 /********************************************************************************************
  *
- *  Example code for opening and fetching compressed profiles produced by FastK
+ *  Command line utility to produce CN-spectra plots
  *
  *  Author:  Gene Myers
- *  Date  :  October, 2020
+ *  Date  :  March, 2021
  *
  *********************************************************************************************/
  
@@ -14,23 +14,16 @@
 #include <dirent.h>
 #include <math.h>
 
-#define DEBUG
-
 #include "libfastk.h"
+#include "cn_plotter.h"
 
-#include "cn.R.h"
-
-static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>] [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-lfs] [-P] [-z] [-o<output>] <asm>[.ktab] <reads>[.ktab]"
+static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
+                         " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
+                         " [-lfs] [-P] [-z] [-T<int(4)>]",
+                         " [-o<output>] <asm>[.ktab] <reads>[.ktab]"
                        };
 
 static char template[15] = "._CN.XXXX";
-
-/****************************************************************************************
- *
- *  Main Routine
- *
- *****************************************************************************************/
 
 int main(int argc, char *argv[])
 { int    LINE, FILL, STACK;
@@ -41,6 +34,9 @@ int main(int argc, char *argv[])
   int    XMAX;
   int64  YMAX;
   char  *OUT;
+  char  *ASM;
+  char  *READS;
+  int    NTHREADS;
   
   { int    i, j, k;
     int    flags[128];
@@ -57,6 +53,7 @@ int main(int argc, char *argv[])
     XMAX = 0;
     YMAX = 0;
     OUT  = NULL;
+    NTHREADS = 4;
 
     j = 1;
     for (i = 1; i < argc; i++)
@@ -67,6 +64,9 @@ int main(int argc, char *argv[])
             break;
           case 'o':
             OUT = argv[i]+2;
+            break;
+          case 'T':
+            ARG_POSITIVE(NTHREADS,"Number of threads")
             break;
           case 'X':
             ARG_POSITIVE(XMAX,"x max");
@@ -112,6 +112,8 @@ int main(int argc, char *argv[])
     if (argc != 3)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[3]);
         fprintf(stderr,"\n");
         fprintf(stderr,"      -w: width in inches of plots\n");
         fprintf(stderr,"      -h: height in inches of plots\n");
@@ -138,188 +140,15 @@ int main(int argc, char *argv[])
       LINE = FILL = STACK = 1;
     if (OUT == NULL)
       OUT = Root(argv[1],".ktab");
+    ASM   = argv[1];
+    READS = argv[2];
   }
 
-  //  Open assembly file ASM, assembly profile AP, and all reference profiles RP[i]
-
-  { char      command[1000];
-    char      what[1000];
-    char     *troot;
-    Histogram *H[6];
-    int        i, k;
-    char      *Label[] = { "read-only", "1", "2", "3", "4", ">4" };
-    FILE      *f;
+  { char *troot;
 
     troot = mktemp(template);
 
-    //  Call Logex to make desired histograms
-
-    sprintf(what,"'%s.0=B-A' '%s.1=B&.A[1]' '%s.2=B&.A[2]' '%s.3=B&.A[3]' '%s.4=B&.A[4]' '%s.5=B&.A[5-]'",
-                 troot,troot,troot,troot,troot,troot);
-    sprintf(command,"Logex -T6 -H32767 %s %s %s",what,argv[1],argv[2]);
-#ifdef DEBUG
-    printf("%s\n",command);
-    fflush(stdout);
-#endif
-    system(command);
-
-    //  Open all histograms
-
-    for (i = 0; i <= 5; i++)
-      { sprintf(command,"%s.%d",troot,i);
-        H[i] = Load_Histogram(command);
-        Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
-      }
-
-    //  If relative x- or y-max then must find peak x,y
-
-    if (XMAX == 0 || YMAX == 0)
-      { int64 sum, last;
-        int64 ym, ymax;
-        int   xm, xmax;   
-
-        ymax = xmax = -1;
-        if (STACK)
-          { int  low  = H[0]->low;
-            int  high = H[0]->high;
-
-            last = 0;
-            for (i = 0; i <= 5; i++)
-              last += H[i]->hist[low];
-            for (k = low+1; k < high; k++) 
-              { sum = 0;
-                for (i = 0; i <= 5; i++)
-                  sum += H[i]->hist[k];
-                if (sum > last)
-                  break;
-                last = sum;
-              }
-            ymax = sum;
-            xmax = k;
-            for ( ; k < high; k++)
-              { sum = 0;
-                for (i = 0; i <= 5; i++)
-                  sum += H[i]->hist[k];
-                if (sum >= ymax)
-                  { ymax = sum;
-                    xmax = k;
-                  }
-              }
-          }
-        if (FILL+LINE > 0)
-          for (i = 0; i <= 5; i++)
-            { int    low  = H[i]->low;
-              int    high = H[i]->high;
-              int64 *hist = H[i]->hist;
-
-              for (k = low+1; hist[k] < hist[k-1]; k++) 
-                if (k >= high)
-                  break;
-              ym = hist[k];
-              xm = k;
-              for ( ; k < high; k++)
-                if (hist[k] >= ym)
-                  { ym = hist[k];
-                    xm = k;
-                  }
-              if (ym > ymax)
-                { ymax = ym;
-                  xmax = xm;
-                }
-            }
-         if (XMAX == 0)
-           XMAX = xmax*XREL;
-         if (YMAX == 0)
-           YMAX = ymax*YREL;
-#ifdef DEBUG
-         printf("x,y-peak = %d, %lld\n",xmax,ymax);
-#endif
-      }
-#ifdef DEBUG
-     printf("x,y-max  = %d, %lld\n",XMAX,YMAX);
-#endif
-
-    //  Merge histograms into 1 for R plotter
-
-    f = fopen(Catenate(troot,".histo","",""),"w");
-#ifdef DEBUG
-    if (f == NULL)
-      printf("Could not open %s\n",Catenate(troot,".histo","",""));
-    else
-      printf("Writing %s\n",Catenate(troot,".histo","",""));
-    fflush(stdout);
-#endif
-    fprintf(f,"Copies\tkmer_multiplicity\tCount\n");
-    for (i = 0; i <= 5; i++)
-      { int    low  = H[i]->low;
-        int    high = H[i]->high;
-        int64 *hist = H[i]->hist;
-
-        for (k = low; k < high; k++)
-          if (hist[k] > 0)
-            fprintf(f,"%s\t%d\t%lld\n",Label[i],k,hist[k]);
-      }
-    fclose(f);
-
-    sprintf(command,"Fastrm %s.*.hist",troot);
-    system(command);
-
-    //  Generate the plot script
-
-    f = fopen(Catenate(troot,".R","",""),"w");
-#ifdef DEBUG
-    if (f == NULL)
-      printf("Could not open %s\n",Catenate(troot,".R","",""));
-    else
-      printf("Generating %s\n",Catenate(troot,".R","",""));
-    fflush(stdout);
-#endif
-    fwrite(cn_plot,strlen(cn_plot),1,f);
-    fclose(f);
-
-    //  Call the plotter with arguments
-
-    if (LINE+FILL+STACK == 3)
-      { sprintf(command,"RScript %s.R -f %s.histo -o %s -x %g -y %g -m %d -n %lld %s 2>/tmp/NULL",
-                        troot,troot,OUT,XDIM,YDIM,XMAX,YMAX,PDF?"-p":"");
-#ifdef DEBUG
-        printf("%s\n",command);
-        fflush(stdout);
-#endif
-        system(command);
-      }
-    else
-      { if (LINE)
-          { sprintf(command,"RScript %s.R -f %s.histo -o %s -t line -x %g -y %g -m %d -n %lld%s",
-                            troot,troot,OUT,XDIM,YDIM,XMAX,YMAX,PDF?" -p":"");
-#ifdef DEBUG
-            printf("%s\n",command);
-            fflush(stdout);
-#endif
-            system(command);
-          }
-        if (FILL)
-          { sprintf(command,"RScript %s.R -f %s.histo -o %s -t fill -x %g -y %g -m %d -n %lld%s",
-                            troot,troot,OUT,XDIM,YDIM,XMAX,YMAX,PDF?" -p":"");
-#ifdef DEBUG
-            printf("%s\n",command);
-            fflush(stdout);
-#endif
-            system(command);
-          }
-        if (STACK)
-          { sprintf(command,"RScript %s.R -f %s.histo -o %s -t stack -x %g -y %g -m %d -n %lld%s",
-                            troot,troot,OUT,XDIM,YDIM,XMAX,YMAX,PDF?" -p":"");
-#ifdef DEBUG
-            printf("%s\n",command);
-            fflush(stdout);
-#endif
-            system(command);
-          }
-      }
-
-    sprintf(command,"rm %s.histo %s.R",troot,troot);
-    system(command);
+    cnplot(OUT,ASM,READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,LINE,FILL,STACK,troot,NTHREADS);
   }
 
   Catenate(NULL,NULL,NULL,NULL);

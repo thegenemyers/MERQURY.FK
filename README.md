@@ -7,7 +7,7 @@
 - [Command Line](#command-line)
   - [CNplot](#CNplot)
   - [ASMplot](#ASMplot)
-  - [HAPplot](#HAPplot)
+  - [CNspectra](#CNspectra)
 
 
 ## Command Line
@@ -31,7 +31,7 @@ All you do is append -P to what you've already typed and then hit return.  So fo
 
 ```
 1. CNplot [-w<double(6.0)>] [-h<double(4.5)>] [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-     [-lfs] [-P] [-z] [-o<output>] <asm>[.ktab] <reads>[.ktab]
+          [-lfs] [-P] [-T<int(4)>] [-z] [-o<output>] <asm>[.ktab] <reads>[.ktab]
 ```
 
 Given k-mer tables, produced by FastK, for an assembly, \<asm>,
@@ -55,7 +55,13 @@ The root path name for the output plots can be set with the -o option.  A suffix
 .st is added for the line, fill, and stack plots, respectively, followed by either .png or .pdf.
 If the -o option is not set, then the root path name is that of the \<asm> argument.
 
-*Implement and describe -z and -c*
+If the -z option is set, then CNplot plots at 0, the # of k-mers in <asm>-<reads> broken down
+into those that are unique or not.
+
+The -T option controls the number of threads used by FastK's "Logex" which is the dominant
+computational cost for CNplot.
+
+*Implement and describe -c ?*
 
 
 <a name="ASMplot"></a>
@@ -63,7 +69,7 @@ If the -o option is not set, then the root path name is that of the \<asm> argum
 
 ```
 2. ASMplot [-w<double(6.0)>] [-h<double(4.5)>] [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-               [-lfs] [-P] [-z] [-o<output>] <asm1>[.ktab] [<asm2>[.ktab]] <reads>[.ktab]
+           [-lfs] [-P] [-z] [-T<int(4)>] [-o<output>] <asm1>[.ktab] [<asm2>[.ktab]] <reads>[.ktab]
 ```
 
 ASMplot has the same optional parameters with the same meaning as CNplot.  What is
@@ -72,11 +78,42 @@ asm1 or asm2, (b) in asm1 but not asm2, (c) in asm2 but not asm1, and (d) in bot
 asm2.  If asm2 is missing, then it looks at the spectra of the reads that are and are not
 in asm1.  The legend is appropriately labeled.
 
-<a name="HAPplot"></a>
+All the options are completely analogous to CNplot.
+
+<a name="CNspectra"></a>
 
 ```
-3. HAPplot [-w<double(6.0)>] [-h<double(4.5)>] [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-               [-lfs] [-P] [-z] [-o<output>] <hap1>[.ktab] <hap2>[.ktab] <reads>[.ktab]
+3. CNspectra [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <out>
 ```
 
-HAPplot has the same optional parameters with the same meaning as ASMplot.  *The only difference is in the legend and title ???*
+CNspectra produces copy-number spectral plots for each assembly, the union of both assemblies (if two are present), the assembly spectral plots, and qv's and completeness statistics, as well as a .bed file of potential error locations.
+
+The primary input arguments -- \<read>, \<asm1>, and \<asm2> if present -- are expected to be the root path names of FastK tables, histograms, and profiles.  Specifically, CNspectra expects
+to find:
+
+* <read>.hist & .ktab produced by <code>FastK -t1 [...] \<read data> -N\<read></code>
+
+* <asm>.hist & .ktab & .prof produced by <code>FastK -t1 -p [...] \<assmebly> -N\<asm></code>
+
+* <asm>.<read>.prof produced by <code>FastK -p:<read> [...] \<assembly> -N\<asm></code>
+
+The primary output argument -- \<cout> -- is the root path name for all the output files
+produced by CNspectra.  Specifically, it *can* produce:
+
+* **\<out>.\<asm>.spectra-cn.***: cn-spectra of \<asm>
+
+* **\<out>.spectra-cn.***: cn-spectra of the union of \<asm1> and \<asm2>
+
+* **\<out>.sectra-asm.***: assembly spectra of the assemblies
+
+* **\<out>.\<asm>.qv**: error and qv table for each scaffold of \<asm>
+
+* **\<out>.qv**: error and qv of each assembly as a whole
+
+* **\<out>.completeness-stat**: coverage of solid read k-mers by the assemblies and their union (if two).
+
+One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
+type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
+If not plot types are set, then all 3 are produced.  Finally, the -T option controls
+the number of threaads used in those bits of CNspectra that are threaded.
+
