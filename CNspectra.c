@@ -20,6 +20,21 @@
 #include "cn_plotter.h"
 #include "asm_plotter.h"
 
+  //  Plotting constants
+
+#define PLOTW  6.0    //  Plot width & height (in inches)
+#define PLOTH  4.5
+
+#define PLOTx  2.1    //  Peak relative x,y scale
+#define PLOTy  1.1
+
+#define PLOTX    0    //  0 => use relative x,y above
+#define PLOTY    0
+
+#define ZOPTION  1    //  0 if do not want -z
+
+  //  Usage
+
 static char *Usage = " [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <out>";
 
 //  Expected inputs from FastK ...
@@ -38,7 +53,7 @@ static char *Usage = " [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <o
 //    OUT.completeness-stat
 //    OUT.ASM_only.bed
 
-static char template[15] = "._CN.XXXX";
+static char template[16] = "._CNS.XXXX";
 
 static int   VERBOSE;
 static int   KMER;
@@ -50,7 +65,7 @@ static int64 scan_asm(char *asmb, char *reads, char *out)
   FILE   *qvs, *bed;
   uint16 *aprof, *rprof;
   int     pmax, plen;
-  int     i, x;
+  int     i, x, last;
   int64   miss, tots;
   int64   TOTS;
   double  err, qv;
@@ -64,12 +79,30 @@ static int64 scan_asm(char *asmb, char *reads, char *out)
   
   AP = Open_Profiles(asmb);
   RP = Open_Profiles(reads);
+  if (AP == NULL)
+    { fprintf(stderr,"\n%s: Cannot open/find FastK profile %s.prof\n",Prog_Name,asmb);
+      exit (1);
+    }
+  if (RP == NULL)
+    { fprintf(stderr,"\n%s: Cannot open/find FastK relative profile %s.prof\n",Prog_Name,reads);
+      exit (1);
+    }
+  if (AP->kmer != KMER)
+    { fprintf(stderr,"\n%s: Profile %s.prof has wrong k-mer size %d != %d\n",
+                     Prog_Name,asmb,AP->kmer,KMER);
+      exit (1);
+    }
+  if (RP->kmer != KMER)
+    { fprintf(stderr,"\n%s: Relative profile %s.prof has wrong k-mer size %d != %d\n",
+                     Prog_Name,reads,RP->kmer,KMER);
+      exit (1);
+    }
 
   pmax  = 20000;
   aprof = Malloc(2*pmax*sizeof(uint16),"Profile array");
-  rprof = aprof + pmax*sizeof(uint16);
+  rprof = aprof + pmax;
 
-  bed = fopen(Catenate(asmb,"_only.bed","",""),"w");
+  bed = fopen(Catenate(out,".",asmb,"_only.bed"),"w");
   qvs = fopen(Catenate(out,".",asmb,".qv"),"w");
 
   fprintf(qvs,"Assembly Only\tTotal\tError %%\tQV\n");
@@ -80,24 +113,35 @@ static int64 scan_asm(char *asmb, char *reads, char *out)
       if (plen > pmax)
         { pmax  = 1.2*plen + 1000;
           aprof = Realloc(aprof,2*pmax*sizeof(uint16),"Profile array");
-          rprof = aprof + pmax*sizeof(uint16);
+          if (aprof == NULL)
+            exit (1);
+          rprof = aprof + pmax;
           Fetch_Profile(AP,i,pmax,aprof);
         }
-      plen = Fetch_Profile(RP,0,pmax,rprof);
+      Fetch_Profile(RP,i,pmax,rprof);
 
+      last = -1;
       miss = tots = 0;
       for (x = 0; x < plen; x++)
         { if (aprof[x] != 0)
             { if (rprof[x] == 0)
                 { miss += 1;
-                  fprintf(bed,"%d\t%d\t%d\n",i,x-KMER,x);
+                  if (x > last)
+                    { if (last > 0)
+                        fprintf(bed,"\t%d\n",last);
+                      fprintf(bed,"%d\t%d",i,x);
+                      last = x+KMER;
+                    }
                 }
               tots += 1;
             }
 	}
+      if (last > 0)
+        fprintf(bed,"\t%d\n",last);
+
       err = 1. - pow(1.-(1.*miss)/tots,1./KMER);
       qv  = -10.*log10(err); 
-      fprintf(qvs,"%lld\t%lld\t%.2f\t%.1f",miss,tots,err,qv);
+      fprintf(qvs,"%lld\t%lld\t%.4f\t%.1f\n",miss,tots,err,qv);
       TOTS += tots;
     }
   fclose(bed);
@@ -107,6 +151,25 @@ static int64 scan_asm(char *asmb, char *reads, char *out)
   Free_Profiles(AP);
 
   return (TOTS);
+}
+
+static void check_table(char *root)
+{ FILE *f;
+  int   kmer;
+
+  f = fopen(Catenate(root,".ktab","",""),"r");
+  if (f == NULL)
+    { fprintf(stderr,"\n%s: Cannot find FastK table %s.ktab\n",Prog_Name,root);
+      exit (1);
+    }
+  else
+    { fread(&kmer,sizeof(int),1,f);
+      if (kmer != KMER)
+        { fprintf(stderr,"\n%s: Kmer (%d) of table %s.ktab != %d\n",Prog_Name,kmer,root,KMER);
+          exit (1);
+        }
+      fclose(f);
+    }
 }
 
 /****************************************************************************************
@@ -141,9 +204,6 @@ int main(int argc, char *argv[])
         { default:
             ARG_FLAGS("vlfs")
             break;
-          case 'T':
-            ARG_POSITIVE(NTHREADS,"Number of threads")
-            break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
               PDF = 1;
@@ -151,6 +211,10 @@ int main(int argc, char *argv[])
               { fprintf(stderr,"%s: don't recognize option %s\n",Prog_Name,argv[i]);
                 exit (1);
               }
+            break;
+          case 'T':
+            ARG_POSITIVE(NTHREADS,"Number of threads")
+            break;
         }
       else
         argv[j++] = argv[i];
@@ -178,6 +242,8 @@ int main(int argc, char *argv[])
         }
       }
 
+    if (LINE+FILL+STACK == 0)
+      LINE = FILL = STACK = 1;
     READS = argv[1];
     if (argc%2 == 1)
       { ASM[0] = argv[argc-3];
@@ -206,6 +272,11 @@ int main(int argc, char *argv[])
     //  Load read histogram and from it get KMER size and infer SOLID threshold and count
 
     Rhist = Load_Histogram(READS);
+    if (Rhist == NULL)
+      { fprintf(stderr,"\n%s: Cannot find FastK histograam %s.hist\n",Prog_Name,READS);
+        exit (1);
+      }
+
     Modify_Histogram(Rhist,Rhist->low,Rhist->high,1);
 
     KMER = Rhist->kmer;
@@ -230,7 +301,10 @@ int main(int argc, char *argv[])
 
     Free_Histogram(Rhist);
 
+
     //  For each assembly
+
+    check_table(READS);
 
     for (i = 0; i < 2; i++)
       { char  *A = ASM[i];
@@ -239,13 +313,17 @@ int main(int argc, char *argv[])
         if (A == NULL)
           continue;
 
+        check_table(A);
+
         //  Make a CN-spectra plot
 
         if (VERBOSE)
           fprintf(stderr,"\n Making CN-spectra plots for %s\n",A);
 
         sprintf(Out,"%s.%s.spectra-cn",OUT,A);
-        miss = cnplot(Out,A,READS,6.0,4.5,2.1,1.1,0,0,PDF,1,LINE,FILL,STACK,troot,NTHREADS);
+        miss = cnplot(Out,A,READS,
+                      PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                      LINE,FILL,STACK,troot,NTHREADS);
 
         //  Compute scaffold QV's and make bed file
 
@@ -257,12 +335,15 @@ int main(int argc, char *argv[])
         { FILE *qvs;
 
           double err, qv;
-          qvs = fopen(Catenate(OUT,"","",".qv"),"a");
+          if (i == 0)
+            qvs = fopen(Catenate(OUT,"","",".qv"),"w");
+          else
+            qvs = fopen(Catenate(OUT,"","",".qv"),"a");
           err = 1. - pow(1.-(1.*miss)/total,1./KMER);
           qv  = -10.*log10(err); 
           if (i == 0)
             fprintf(qvs,"Assembly\tNo Supprt\tTotal\tError %%\tQV\n");
-          fprintf(qvs,"%s\t%lld\t%lld\t%.2f\t%.1f",A,miss,total,100.*err,qv);
+          fprintf(qvs,"%s\t%lld\t%lld\t%.4f\t%.1f\n",A,miss,total,100.*err,qv);
           fclose(qvs);
         }
       }
@@ -273,11 +354,15 @@ int main(int argc, char *argv[])
       {
         //  Compute & output completeness stat
 
+        if (VERBOSE)
+          fprintf(stderr,"\n Computing completeness stats for %s\n",ASM[0]);
+
         { Histogram *H;
           FILE *cps;
 
           sprintf(command,"Logex -H1 -T%d '%s.0 = A-B[%d-]' %s %s",
                           NTHREADS,troot,SOLID_THRESH,ASM[0],READS);
+          system(command);
       
           cps = fopen(Catenate(OUT,"","",".completeness_stat"),"w");
           fprintf(cps,"Assembly\t%% Covered\n");
@@ -298,13 +383,23 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Making Assembly-spectra plot for %s\n",*ASM);
 
-        asmplot(Out,ASM[0],NULL,READS,6.0,4.5,2.1,1.1,0,0,PDF,1,LINE,FILL,STACK,troot,NTHREADS);
+        sprintf(Out,"%s.spectra-asm",OUT);
+
+        asmplot(Out,ASM[0],NULL,READS,
+                PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                LINE,FILL,STACK,troot,NTHREADS);
       }
 
     //  2 haploid assemblies ...
 
     else
-      { int64  miss, total;
+      { int64      miss, total;
+        Histogram *H;
+        FILE      *cps, *qvs;
+        double     err, qv;
+
+        if (VERBOSE)
+          fprintf(stderr,"\n Making CN-spectra plot for %s U %s\n",ASM[0],ASM[1]);
 
         //  Form the "k-mer union" of the two assemblies
 
@@ -313,70 +408,71 @@ int main(int argc, char *argv[])
 
         //  Make a CN spectra plot for the union
 
-        if (VERBOSE)
-          fprintf(stderr,"\n Making CN-spectra plot for %s U %s\n",ASM[0],ASM[1]);
-
         sprintf(Out,"%s.spectra-cn",OUT);
         sprintf(A1uA2,"%s.U",troot);
-        miss = cnplot(Out,A1uA2,READS,6.0,4.5,2.1,1.1,0,0,PDF,1,LINE,FILL,STACK,troot,NTHREADS);
 
-        total = 0;  // the histogram entry of troot.U
+        H = Load_Histogram(A1uA2);
+        total = H->hist[1];
+        Free_Histogram(H);
+
+        miss = cnplot(Out,A1uA2,READS,
+                      PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                      LINE,FILL,STACK,troot,NTHREADS);
 
         //  Output global qv
 
-        { FILE *qvs;
-
-          double err, qv;
-          qvs = fopen(Catenate(OUT,"","",".qv"),"a");
-          err = 1. - pow(1.-(1.*miss)/total,1./KMER);
-          qv  = -10.*log10(err); 
-          fprintf(qvs,"Both\t%lld\t%lld\t%.2f\t%.1f",miss,total,100.*err,qv);
-          fclose(qvs);
-        }
+        qvs = fopen(Catenate(OUT,"","",".qv"),"a");
+        err = 1. - pow(1.-(1.*miss)/total,1./KMER);
+        qv  = -10.*log10(err); 
+        fprintf(qvs,"Both\t%lld\t%lld\t%.4f\t%.1f\n",miss,total,100.*err,qv);
+        fclose(qvs);
 
         //  Compute & output completeness stats
 
-        { Histogram *H;
-          FILE      *cps;
+        if (VERBOSE)
+          fprintf(stderr,"\n Computing completeness stats for %s and %s\n",ASM[0],ASM[1]);
 
-          sprintf(command,
-                  "Logex -H1 -T%d '%s.0 = A-D[%d-]' '%s.1=B-D[%d-]' '%s.2=C-D[%d-]' %s %s %s %s",
-                  NTHREADS,troot,SOLID_THRESH,troot,SOLID_THRESH,troot,SOLID_THRESH,
-                  ASM[0],ASM[1],A1uA2,READS);
+        sprintf(command,
+                "Logex -H1 -T%d '%s.0 = A-D[%d-]' '%s.1=B-D[%d-]' '%s.2=C-D[%d-]' %s %s %s %s",
+                NTHREADS,troot,SOLID_THRESH,troot,SOLID_THRESH,troot,SOLID_THRESH,
+                ASM[0],ASM[1],A1uA2,READS);
+        system(command);
       
-          cps = fopen(Catenate(OUT,"","",".completeness_stat"),"w");
-          fprintf(cps,"Assembly\t%% Covered\n");
+        cps = fopen(Catenate(OUT,"","",".completeness_stat"),"w");
+        fprintf(cps,"Assembly\t%% Covered\n");
 
-          sprintf(Hname,"%s.0",troot);
-          H = Load_Histogram(Hname);
-          fprintf(cps,"%s\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
-          Free_Histogram(H);
+        sprintf(Hname,"%s.0",troot);
+        H = Load_Histogram(Hname);
+        fprintf(cps,"%s\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        Free_Histogram(H);
 
-          sprintf(Hname,"%s.1",troot);
-          H = Load_Histogram(Hname);
-          fprintf(cps,"%s\t%.2f\n",ASM[1],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
-          Free_Histogram(H);
+        sprintf(Hname,"%s.1",troot);
+        H = Load_Histogram(Hname);
+        fprintf(cps,"%s\t%.2f\n",ASM[1],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        Free_Histogram(H);
 
-          sprintf(Hname,"%s.2",troot);
-          H = Load_Histogram(Hname);
-          fprintf(cps,"Both\t%.2f\n",(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
-          Free_Histogram(H);
+        sprintf(Hname,"%s.2",troot);
+        H = Load_Histogram(Hname);
+        fprintf(cps,"Both\t%.2f\n",(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        Free_Histogram(H);
 
-          fclose(cps);
+        fclose(cps);
 
-          sprintf(command,"Fastrm %s.*.hist",troot);
-          system(command);
-        }
+        //  Clean up
 
-        sprintf(command,"Fastrm %s.U",troot);
+        sprintf(command,"Fastrm %s.*.hist %s.U",troot,troot);
         system(command);
 
         //   Produce assembly-spectra plots
 
         if (VERBOSE)
-          fprintf(stderr,"\n Making Assembly-spectra plot for %s aand %s\n",ASM[0],ASM[1]);
+          fprintf(stderr,"\n Making Assembly-spectra plot for %s and %s\n",ASM[0],ASM[1]);
 
-        asmplot(Out,ASM[0],ASM[1],READS,6.0,4.5,2.1,1.1,0,0,PDF,1,LINE,FILL,STACK,troot,NTHREADS);
+        sprintf(Out,"%s.spectra-asm",OUT);
+
+        asmplot(Out,ASM[0],ASM[1],READS,
+                PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                LINE,FILL,STACK,troot,NTHREADS);
       }
   }
 

@@ -14,9 +14,21 @@
 #include <dirent.h>
 #include <math.h>
 
-#define DEBUG
+#undef DEBUG
 
 #include "libfastk.h"
+
+#include "cn_plot.R.h"
+
+static int64 GetCount(Histogram *H)
+{ int64 sum;
+  int   k;
+
+  sum = 0;
+  for (k = H->low; k <= H->high; k++)
+    sum += H->hist[k];
+  return (sum);
+}
 
 void asmplot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
               double XDIM, double YDIM,
@@ -43,7 +55,7 @@ void asmplot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
         sprintf(extra," '%s.2=A-B'",troot);
       else
         sprintf(extra,"");
-      sprintf(command,"Logex -T%d -H32767 %s%s %s %s",NTHREADS,extra,what,ASM1,READS);
+      sprintf(command,"Logex -T%d -H1000 %s%s %s %s",NTHREADS,what,extra,ASM1,READS);
       nhist = 2;
       Label[1] = Root(ASM1,".ktab");
       Label[2] = Root(ASM1,".ktab");
@@ -52,10 +64,10 @@ void asmplot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
     { sprintf(what,"'%s.0=C-#(A|B)' '%s.1=C&.(A-B)' '%s.2=C&.(B-A)' '%s.3=C&.#(A&B)'",
                    troot,troot,troot,troot);
       if (ZGRAM)
-        sprintf(extra," '%s.4=(A|+B)-C'",troot);
+        sprintf(extra," '%s.4=(A&+B)-C' '%s.5=(A-B)-C' '%s.6=(B-A)-C'",troot,troot,troot);
       else
         sprintf(extra,"");
-      sprintf(command,"Logex -T%d -H32767 %s%s %s %s %s",NTHREADS,what,extra,ASM1,ASM2,READS);
+      sprintf(command,"Logex -T%d -H1000 %s%s %s %s %s",NTHREADS,what,extra,ASM1,ASM2,READS);
       Label[1] = Root(ASM1,".ktab");
       Label[2] = Root(ASM2,".ktab");
       nhist = 4;
@@ -68,7 +80,7 @@ void asmplot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
 
   //  Open all histograms
 
-  for (i = 0; i < nhist+ZGRAM; i++)
+  for (i = 0; i < nhist*(1+ZGRAM)-ZGRAM; i++)
     { sprintf(command,"%s.%d",troot,i);
       H[i] = Load_Histogram(command);
       Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
@@ -170,18 +182,12 @@ fflush(stdout);
               fprintf(f,"%s\t%d\t%lld\n",Label[i],k,hist[k]);
         }
     }
-  free(Label[1]);
-  free(Label[2]);
   fclose(f);
 
   //  If -z option then use A-B histogram to produce needed data file
 
   if (ZGRAM)
-    { int    high = H[nhist]->high;
-      int64 *hist = H[nhist]->hist;
-      int64  sum;
-
-      f = fopen(Catenate(troot,".asmz","",""),"w");
+    { f = fopen(Catenate(troot,".asmz","",""),"w");
 #ifdef DEBUG
       if (f == NULL)
         printf("Could not open %s\n",Catenate(troot,".asmz","",""));
@@ -189,22 +195,44 @@ fflush(stdout);
         printf("Writing %s\n",Catenate(troot,".asmz","",""));
       fflush(stdout);
 #endif
-      fprintf(f,"1\t%lld\n",hist[1]);
-      sum = 0;
-      for (k = 2; k <= high; k++)
-        sum += hist[k];
-      fprintf(f,"2\t%lld\n",sum);
+
+      if (nhist == 4)
+        { fprintf(f,"%s-only\t0\t%lld\n",ASM1,GetCount(H[nhist]));
+          fprintf(f,"%s-only\t0\t%lld\n",ASM2,GetCount(H[nhist+1]));
+          fprintf(f,"shared\t0\t%lld\n",GetCount(H[nhist+2]));
+        }
+      else
+        fprintf(f,"%s\t0\t%lld\n",ASM1,GetCount(H[nhist]));
       fclose(f);
     }
 
   sprintf(command,"Fastrm %s.*.hist",troot);
   system(command);
 
+  free(Label[1]);
+  free(Label[2]);
+
+  //  Generate the R plot script
+
+  f = fopen(Catenate(troot,".R","",""),"w");
+#ifdef DEBUG
+  if (f == NULL)
+    printf("Could not open %s\n",Catenate(troot,".R","",""));
+  else
+    printf("Generating %s\n",Catenate(troot,".R","",""));
+  fflush(stdout);
+#endif
+  fwrite(cn_plot,strlen(cn_plot),1,f);
+  fclose(f);
+
   //  Call the plotter with arguments
 
-  sprintf(what,"plot_spectra_cn.R -f %s.asmi -o %s%s -x %g -y %g -m%d -n %lld",
-               troot,OUT,PDF?" -p":" ",XDIM,YDIM,XMAX,YMAX);
-  sprintf(extra," -z %s.asmz",troot);
+  sprintf(what,"Rscript %s.R -f %s.asmi -o %s%s -x %g -y %g -m%d -n %lld",
+               troot,troot,OUT,PDF?" -p":"",XDIM,YDIM,XMAX,YMAX);
+  if (ZGRAM)
+    sprintf(extra," -z %s.asmz",troot);
+  else
+    sprintf(extra,"");
   if (LINE+FILL+STACK == 3)
     { sprintf(command,"%s%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
@@ -240,6 +268,6 @@ fflush(stdout);
         }
     }
 
-  sprintf(command,"rm -f %s.asmi %s.asmz",troot,troot);
+  sprintf(command,"rm -f %s.asmi %s.asmz %s.R",troot,troot,troot);
   system(command);
 }

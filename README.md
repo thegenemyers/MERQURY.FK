@@ -30,8 +30,10 @@ All you do is append -P to what you've already typed and then hit return.  So fo
 <a name="CNplot"></a>
 
 ```
-1. CNplot [-w<double(6.0)>] [-h<double(4.5)>] [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-          [-lfs] [-P] [-T<int(4)>] [-z] [-o<output>] <asm>[.ktab] <reads>[.ktab]
+1. CNplot [-w<double(6.0)>] [-h<double(4.5)>]
+          [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
+          [-lfs] [-pdf] [-z] [-T<int(4)>]
+          [-o<output>] <asm>[.ktab] <reads>[.ktab]
 ```
 
 Given k-mer tables, produced by FastK, for an assembly, \<asm>,
@@ -49,7 +51,7 @@ landmark for setting the axis limits and with the -x and -y options one can set 
 as a multiple of x\* or y\*.  By default, CNplot sets the axis maximums to x\*&#183;2.1 and y\*&#183;1.1.
 
 CNplot can produce any of a line plot, a filled plot, or a so-called stacked plot where the individual histograms accumulate.  By default it produces all three, but the user can select any subset with the options -l (line), -f (fill), and -s (stack).  By default the plots are .png's
-but one can request .pdf's with the -P option.
+but one can request .pdf's with the -pdf option.
 
 The root path name for the output plots can be set with the -o option.  A suffix of .ln, .fl, or
 .st is added for the line, fill, and stack plots, respectively, followed by either .png or .pdf.
@@ -68,8 +70,10 @@ computational cost for CNplot.
 
 
 ```
-2. ASMplot [-w<double(6.0)>] [-h<double(4.5)>] [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-           [-lfs] [-P] [-z] [-T<int(4)>] [-o<output>] <asm1>[.ktab] [<asm2>[.ktab]] <reads>[.ktab]
+2. ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
+           [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
+           [-lfs] [-pdf] [-z] [-T<int(4)>]
+           [-o<output>] <asm1>[.ktab] [<asm2>[.ktab]] <reads>[.ktab]
 ```
 
 ASMplot has the same optional parameters with the same meaning as CNplot.  What is
@@ -81,39 +85,45 @@ in asm1.  The legend is appropriately labeled.
 <a name="CNspectra"></a>
 
 ```
-3. CNspectra [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <out>
+3. CNspectra [-v] [-lfs] [-pdf] [-T<int(4)>] <read> <asm1> [<asm2>] <out>
 ```
 
-CNspectra produces copy-number spectral plots for each assembly, a copy-number spectral plot of the union of both assemblies (if two are present), an assembly spectral plot, and tables of qv and completeness statistics, as well as a .bed file of potential error locations.
+CNspectra produces copy-number spectra plots for each assembly, a copy-number spectra plot of the union of both assemblies (if two are present), an assembly spectra plot, and tables of qv and completeness statistics, as well as a .bed file of potential error locations in each supplied assembly.
 
-The primary input arguments -- \<read>, \<asm1>, and \<asm2> if present -- are expected to be the root path names of FastK tables, histograms, and profiles.  Specifically, CNspectra expects
+The primary input arguments -- \<read>, \<asm1>, and \<asm2> (if present) -- are expected to be the root path names of FastK tables, histograms, and profiles.  Specifically, CNspectra expects
 to find:
 
-* **\<read>.hist & .ktab** produced by <code>FastK -t1 [...] \<read_data> -N\<read></code>
+* **\<read>.hist & .ktab** produced by <code>FastK -t1 -k\<K> [...] \<read_data> -N\<read></code>
 
-* **\<asm>.ktab & .prof** produced by <code>FastK -t1 -p [...] \<assembly> -N\<asm></code>
+* **\<asm>.ktab & .prof** produced by <code>FastK -t1 -p -k\<K> [...] \<assembly> -N\<asm></code>
 
-* **\<asm>.\<read>.prof** produced by <code>FastK -p:<read> [...] \<assembly> -N\<asm></code>
+* **\<asm>.\<read>.prof** produced by <code>FastK -p:<read> -k\<K> [...] \<assembly> -N\<asm></code>
 
-The primary output argument -- \<cout> -- is the root path name for all the output files
+where the k-mer size \<K> is the same for all calls.
+
+The primary output argument -- \<out> -- is the root path name for all the output files
 produced by CNspectra.  Specifically, it *can* produce:
 
 * **\<out>.\<asm>.spectra-cn.***: cn-spectra plots of \<asm>
 
+* **\<out>.\<asm>.qv**: error and qv table for each scaffold of \<asm>
+
+* **\<out>.\<asm>_only.bed**: a .bed file of the locations where the assembly has k-mer's not supported by the read data set.
+
 * **\<out>.spectra-cn.***: cn-spectra plots of the union of \<asm1> and \<asm2>
 
-* **\<out>.sectra-asm.***: assembly spectra plots of the assemblies
-
-* **\<out>.\<asm>.qv**: error and qv table for each scaffold of \<asm>
+* **\<out>.spectra-asm.***: assembly spectra plots of the assemblies
 
 * **\<out>.qv**: error and qv of each assembly as a whole
 
-* **\<out>.completeness-stat**: coverage of solid read k-mers by the assemblies and their union (if two).
-
-* **\<out>.\<asm>_only.bed**: a .bed file of the locations where the assembly has k-mer's not supported by the read data set.
+* **\<out>.completeness-stat**: coverage of solid read k-mers by the assemblies and their union (if two are given).
 
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
 If no plot types are set, then all 3 are produced.  Finally, the -T option controls
 the number of threads used in those bits of CNspectra that are threaded.
+
+CNspectra uses the default dimensions and scaling parameters of CNplot and ASMplot when
+producing plots and always with the -z option set.  These settings can be reset by redefining
+a easily identifiable set of defined constants at the top of CNspectra.c
 

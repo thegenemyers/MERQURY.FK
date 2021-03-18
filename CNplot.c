@@ -19,11 +19,36 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-lfs] [-P] [-z] [-T<int(4)>]",
+                         " [-lfs] [-pdf] [-z] [-T<int(4)>]",
                          " [-o<output>] <asm>[.ktab] <reads>[.ktab]"
                        };
 
 static char template[15] = "._CN.XXXX";
+
+static void check_table(char *name)
+{ static int KMER = 0;
+  int   kmer;
+  FILE *f;
+
+  if (strcmp(name+(strlen(name)-5),".ktab") != 0)
+    name = Catenate(name,".ktab","","");
+
+  f = fopen(name,"r");
+  if (f == NULL)
+    { fprintf(stderr,"%s: Cannot find FastK table %s\n",Prog_Name,name);
+      exit (1);
+    }
+  else
+    { fread(&kmer,sizeof(int),1,f);
+      if (KMER == 0)
+        KMER = kmer;
+      else if (kmer != KMER)
+        { fprintf(stderr,"%s: Kmer (%d) of table %s != %d\n",Prog_Name,kmer,name,KMER);
+          exit (1);
+        }
+      fclose(f);
+    }
+}
 
 int main(int argc, char *argv[])
 { int    LINE, FILL, STACK;
@@ -52,6 +77,7 @@ int main(int argc, char *argv[])
     YREL = 1.1;
     XMAX = 0;
     YMAX = 0;
+    PDF  = 0;
     OUT  = NULL;
     NTHREADS = 4;
 
@@ -60,16 +86,24 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("lfsPz")
+            ARG_FLAGS("lfsz")
+            break;
+          case 'h':
+            ARG_REAL(YDIM);
             break;
           case 'o':
             OUT = argv[i]+2;
             break;
-          case 'T':
-            ARG_POSITIVE(NTHREADS,"Number of threads")
+          case 'p':
+            if (strcmp("df",argv[i]+2) == 0)
+              PDF = 1;
+            else
+              { fprintf(stderr,"%s: don't recognize option %s\n",Prog_Name,argv[i]);
+                exit (1);
+              }
             break;
-          case 'X':
-            ARG_POSITIVE(XMAX,"x max");
+          case 'w':
+            ARG_REAL(XDIM);
             break;
           case 'x':
             ARG_REAL(XREL);
@@ -78,6 +112,19 @@ int main(int argc, char *argv[])
                 exit (1);
               }
             break;
+            break;
+          case 'y':
+            ARG_REAL(YREL);
+            if (YREL <= 0.)
+              { fprintf(stderr,"%s: max y scaling factor must be > 0\n",Prog_Name);
+                exit (1);
+              }
+          case 'T':
+            ARG_POSITIVE(NTHREADS,"Number of threads")
+            break;
+          case 'X':
+            ARG_POSITIVE(XMAX,"x max");
+            break;
           case 'Y':
             { int ymax;
 
@@ -85,25 +132,11 @@ int main(int argc, char *argv[])
                YMAX = ymax;
                break;
             }
-          case 'y':
-            ARG_REAL(YREL);
-            if (YREL <= 0.)
-              { fprintf(stderr,"%s: max y scaling factor must be > 0\n",Prog_Name);
-                exit (1);
-              }
-            break;
-          case 'w':
-            ARG_REAL(XDIM);
-            break;
-          case 'h':
-            ARG_REAL(YDIM);
-            break;
         }
       else
         argv[j++] = argv[i];
     argc = j;
 
-    PDF   = flags['P'];
     LINE  = flags['l'];
     FILL  = flags['f'];
     STACK = flags['s'];
@@ -129,10 +162,12 @@ int main(int argc, char *argv[])
         fprintf(stderr,"      -s: draw stack plot\n");
         fprintf(stderr,"          any combo allowed, none => draw all\n");
         fprintf(stderr,"\n");
-	fprintf(stderr,"      -P: output .pdf (default is .png)\n");
+	fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
         fprintf(stderr,"\n");
 	fprintf(stderr,"      -o: root name for output plots\n");
 	fprintf(stderr,"          default is root path of <asm> argument\n");
+        fprintf(stderr,"\n");
+	fprintf(stderr,"      -T: number of threads to use\n");
         exit (1);
       }
 
@@ -142,6 +177,9 @@ int main(int argc, char *argv[])
       OUT = Root(argv[1],".ktab");
     ASM   = argv[1];
     READS = argv[2];
+
+    check_table(ASM);
+    check_table(READS);
   }
 
   { char *troot;

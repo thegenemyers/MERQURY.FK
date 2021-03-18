@@ -6,16 +6,19 @@ ALL = CNplot ASMplot CNspectra
 
 all: $(ALL)
 
-libfastk.c : gene_core.c
+libfastk.c : gene_core.c libfastK.h
 libfastk.h : gene_core.h
 
-CNplot: CNplot.c cn_plotter.c cn_plotter.h libfastk.c libfastk.h
+cn_plotter.c : cn_plot.R.h cn_plotter.h
+asm_plotter.c : cn_plot.R.h asm_plotter.h
+
+CNplot: CNplot.c cn_plotter.c libfastk.c
 	gcc $(CFLAGS) -o CNplot CNplot.c cn_plotter.c libfastk.c -lpthread -lm
 
-ASMplot: ASMplot.c asm_plotter.c asm_plotter.h libfastk.c libfastk.h
+ASMplot: ASMplot.c asm_plotter.c libfastk.c
 	gcc $(CFLAGS) -o ASMplot ASMplot.c asm_plotter.c libfastk.c -lpthread -lm
 
-CNspectra: CNspectra.c cn_plotter.c cn_plotter.h asm_plotter.c asm_plotter.h libfastk.c libfastk.h
+CNspectra: CNspectra.c cn_plotter.c asm_plotter.c libfastk.c
 	gcc $(CFLAGS) -o CNspectra CNspectra.c cn_plotter.c asm_plotter.c libfastk.c -lpthread -lm
 
 clean:

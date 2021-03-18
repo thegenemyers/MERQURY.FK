@@ -14,9 +14,11 @@
 #include <dirent.h>
 #include <math.h>
 
-#define DEBUG
+#undef DEBUG
 
 #include "libfastk.h"
+
+#include "cn_plot.R.h"
 
 int64 cnplot(char  *OUT, char  *ASM, char  *READS,
              double XDIM, double YDIM,
@@ -163,11 +165,11 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
         printf("Writing %s\n",Catenate(troot,".cnz","",""));
       fflush(stdout);
 #endif
-      fprintf(f,"1\t%lld\n",hist[1]);
+      fprintf(f,"1\t0\t%lld\n",hist[1]);
       errors = 0;
       for (k = 2; k <= high; k++)
         errors += hist[k];
-      fprintf(f,"2\t%lld\n",errors);
+      fprintf(f,"2\t0\t%lld\n",errors);
       fclose(f);
 
       errors += hist[1];
@@ -180,13 +182,29 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
   sprintf(command,"Fastrm %s.*.hist",troot);
   system(command);
 
+  //  Generate the R plot script
+
+  f = fopen(Catenate(troot,".R","",""),"w");
+#ifdef DEBUG
+  if (f == NULL)
+    printf("Could not open %s\n",Catenate(troot,".R","",""));
+  else
+    printf("Generating %s\n",Catenate(troot,".R","",""));
+  fflush(stdout);
+#endif
+  fwrite(cn_plot,strlen(cn_plot),1,f);
+  fclose(f);
+
   //  Call the R plotter with arguments
 
-  sprintf(what,"plot_spectra_cn.R -f %s.cni -o %s%s -x %g -y %g -m%d -n %lld",
-               troot,OUT,PDF?" -p":" ",XDIM,YDIM,XMAX,YMAX);
-  sprintf(extra," -z %s.cnz",troot);
+  sprintf(what,"Rscript %s.R -f %s.cni -o %s%s -x %g -y %g -m%d -n %lld",
+               troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,XMAX,YMAX);
+  if (ZGRAM)
+    sprintf(extra," -z %s.cnz",troot);
+  else
+    sprintf(extra,"");
   if (LINE+FILL+STACK == 3)
-    { sprintf(command,"%s%s 2>/tmp/NULL",what,ZGRAM?extra:"");
+    { sprintf(command,"%s%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -195,7 +213,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
     }
   else
     { if (LINE)
-        { sprintf(command,"%s -t line%s 2>/tmp/NULL",what,ZGRAM?extra:"");
+        { sprintf(command,"%s -t line%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
           printf("%s\n",command);
           fflush(stdout);
@@ -203,7 +221,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
           system(command);
         }
       if (FILL)
-        { sprintf(command,"%s -t fill%s 2>/tmp/NULL",what,ZGRAM?extra:"");
+        { sprintf(command,"%s -t fill%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
           printf("%s\n",command);
           fflush(stdout);
@@ -211,7 +229,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
           system(command);
         }
       if (STACK)
-        { sprintf(command,"%s -t stack%s 2>/tmp/NULL",what,ZGRAM?extra:"");
+        { sprintf(command,"%s -t stack%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
           printf("%s\n",command);
           fflush(stdout);
@@ -220,7 +238,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
         }
     }
 
-  sprintf(command,"rm -f %s.cni %s.cnz",troot,troot);
+  sprintf(command,"rm -f %s.cni %s.cnz %s.R",troot,troot,troot);
   system(command);
 
   return (errors);
