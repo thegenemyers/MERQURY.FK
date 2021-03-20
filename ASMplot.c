@@ -166,6 +166,8 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
 	fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
         fprintf(stderr,"\n");
+        fprintf(stderr,"      -z: plot counts of k-mers unique to one or both assemblies\n");
+        fprintf(stderr,"\n");
 	fprintf(stderr,"      -o: root name for output plots\n");
 	fprintf(stderr,"          default is root path of <asm> argument\n");
         fprintf(stderr,"\n");

@@ -130,8 +130,8 @@ static int64 scan_asm(char *asmb, char *reads, char *out)
                     { if (last > 0)
                         fprintf(bed,"\t%d\n",last);
                       fprintf(bed,"%d\t%d",i,x);
-                      last = x+KMER;
                     }
+                  last = x+KMER;
                 }
               tots += 1;
             }
