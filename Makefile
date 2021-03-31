@@ -6,7 +6,7 @@ ALL = CNplot ASMplot CNspectra
 
 all: $(ALL)
 
-libfastk.c : gene_core.c libfastK.h
+libfastk.c : gene_core.c libfastk.h
 libfastk.h : gene_core.h
 
 cn_plotter.c : cn_plot.R.h cn_plotter.h
