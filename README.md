@@ -26,8 +26,8 @@ our commands will look for ```foo.fasta, foo.fa, foo.fastq, and foo.fq``` if you
 be in any order and in any position relaltive to the non-optional primary arguments (which must
 be given in the order specified).  We find this pretty convenient when for example you
 have typed out an entire CNplot command (1. below) but forgot that you wanted .pdf's.
-All you do is append -P to what you've already typed and then hit return.  So for example,
-```CNplot -w4 -h3 Assembly -ls Reads -P``` is acceptable input.
+All you do is append -pdf to what you've already typed and then hit return.  So for example,
+```CNplot -w4 -h3 Assembly -ls Reads -pdf``` is acceptable input.
 
 <a name="CNplot"></a>
 
@@ -144,11 +144,11 @@ spectra.  The controlling options are almost identical to those of CNplot, save 
 (1) the -z option is not relevant, and (2) the meaning of the plot type options,
 -l, -f, and -s -- are as follows:
 
-The -l option produces a contour plot of count iso-lines.   The -f option produces
-a heat map of the counts.  The -s option produces a heap map with a contour plot
-overlayed on top of it.
+The -l option produces a contour **line** plot of count iso-lines.   The -f option produces
+a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
+**stacked** on top of it.
 
-Another difference with CNplot, is that the y-axis denotes the frequency of k-mers in the second data set, rather than the count of k-mers in the first data set.
+Another difference with CNplot, is that the y-axis denotes the frequency of k-mers in the second data set, rather than the count of k-mers in the lone data set.
 
 <a name="KatGC"></a>
 
@@ -159,11 +159,11 @@ Another difference with CNplot, is that the y-axis denotes the frequency of k-me
 ```
 
 Given a k-mer table, `<source>`, produced by FastK, *KatGC* produces a 3D heat map
-or contour map of the frequency of a k-mer versus it GC content.
+or contour map of the frequency of a k-mer versus its' GC content.
 The controlling options are almost identical to those of CNplot, save that
-(1) -z and -yY are not relevant, and (2) the meaning of the plot type options,
+(1) -z and -[yY] are not relevant, and (2) the meaning of the plot type options,
 -l, -f, and -s -- are as follows:
 
-The -l option produces a contour plot of count iso-lines.   The -f option produces
-a heat map of the counts.  The -s option produces a heap map with a contour plot
-overlayed on top of it.
+The -l option produces a contour **line** plot of count iso-lines.   The -f option produces
+a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
+**stacked** on top of it.
