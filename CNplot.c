@@ -67,8 +67,6 @@ int main(int argc, char *argv[])
     int    flags[128];
     char  *eptr;
 
-    (void) flags;
-
     ARG_INIT("CNpLot");
 
     XDIM = 6.0;
@@ -112,13 +110,13 @@ int main(int argc, char *argv[])
                 exit (1);
               }
             break;
-            break;
           case 'y':
             ARG_REAL(YREL);
             if (YREL <= 0.)
               { fprintf(stderr,"%s: max y scaling factor must be > 0\n",Prog_Name);
                 exit (1);
               }
+            break;
           case 'T':
             ARG_POSITIVE(NTHREADS,"Number of threads")
             break;

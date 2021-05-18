@@ -50,7 +50,7 @@ static char *Usage = " [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <o
 //    OUT.spectra-cn.* (if 2 haploids)
 //    OUT.qv
 //    OUT.ASM[i].qv
-//    OUT.completeness-stat
+//    OUT.completeness-stats
 //    OUT.ASM_only.bed
 
 static char template[16] = "._CNS.XXXX";
@@ -364,12 +364,12 @@ int main(int argc, char *argv[])
                           NTHREADS,troot,SOLID_THRESH,ASM[0],READS);
           system(command);
       
-          cps = fopen(Catenate(OUT,"","",".completeness_stat"),"w");
-          fprintf(cps,"Assembly\t%% Covered\n");
+          cps = fopen(Catenate(OUT,"","",".completeness_stats"),"a");
 
           sprintf(Hname,"%s.0",troot);
           H = Load_Histogram(Hname);
-          fprintf(cps,"%s\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+          fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
+                                                    (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
           Free_Histogram(H);
 
           fclose(cps);
@@ -438,22 +438,25 @@ int main(int argc, char *argv[])
                 ASM[0],ASM[1],A1uA2,READS);
         system(command);
       
-        cps = fopen(Catenate(OUT,"","",".completeness_stat"),"w");
+        cps = fopen(Catenate(OUT,"","",".completeness_stats"),"a");
         fprintf(cps,"Assembly\t%% Covered\n");
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
+                                                  (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.1",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\t%.2f\n",ASM[1],(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[1],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
+                                                  (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.2",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"Both\t%.2f\n",(SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"both\tall\t%lld\t%lld\t%.2f\n",(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
+                                                    (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         fclose(cps);

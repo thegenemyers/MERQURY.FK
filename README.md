@@ -8,6 +8,8 @@
   - [CNplot](#CNplot)
   - [ASMplot](#ASMplot)
   - [CNspectra](#CNspectra)
+  - [KatComp](#KatComp)
+  - [KatGC](#KatGC)
 
 
 ## Command Line
@@ -116,7 +118,7 @@ produced by CNspectra.  Specifically, it *can* produce:
 
 * **\<out>.qv**: error and qv of each assembly as a whole
 
-* **\<out>.completeness-stat**: coverage of solid read k-mers by the assemblies and their union (if two are given).
+* **\<out>.completeness-stats**: coverage of solid read k-mers by the assemblies and their union (if two are given).
 
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
@@ -127,3 +129,41 @@ CNspectra uses the default dimensions and scaling parameters of CNplot and ASMpl
 producing plots and always with the -z option set.  These settings can be reset by redefining
 a easily identifiable set of defined constants at the top of CNspectra.c
 
+
+<a name="KatComp"></a>
+
+```
+4. KatComp [-w<double(6.0)>] [-h<double(4.5)>]
+           [-[xX]<number(x2.1)>] [-[yY]<number(y2.1)>]
+           [-lfs] [-pdf] [-T<int(4)>]
+           [-o<output>] <source1[.ktab] <source2>[.ktab]
+```
+
+Given two FastK k-mer tables, `<source1>` and `<source2>`, with the same k-mer size, *KatComp* produces a 3D heat map or contour map of the product of the two k-mer
+spectra.  The controlling options are almost identical to those of CNplot, save that
+(1) the -z option is not relevant, and (2) the meaning of the plot type options,
+-l, -f, and -s -- are as follows:
+
+The -l option produces a contour plot of count iso-lines.   The -f option produces
+a heat map of the counts.  The -s option produces a heap map with a contour plot
+overlayed on top of it.
+
+Another difference with CNplot, is that the y-axis denotes the frequency of k-mers in the second data set, rather than the count of k-mers in the first data set.
+
+<a name="KatGC"></a>
+
+```
+5. KatGC [-w<double(6.0)>] [-h<double(4.5)>]
+         [-[xX]<number(x2.1)>] [-lfs] [-pdf] [-T<int(4)>]
+         [-o<output>] <source>[.ktab]
+```
+
+Given a k-mer table, `<source>`, produced by FastK, *KatGC* produces a 3D heat map
+or contour map of the frequency of a k-mer versus it GC content.
+The controlling options are almost identical to those of CNplot, save that
+(1) -z and -yY are not relevant, and (2) the meaning of the plot type options,
+-l, -f, and -s -- are as follows:
+
+The -l option produces a contour plot of count iso-lines.   The -f option produces
+a heat map of the counts.  The -s option produces a heap map with a contour plot
+overlayed on top of it.

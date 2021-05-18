@@ -137,7 +137,7 @@ save_plot <- function(name, type, outformat, h, w) {  \n\
   ggsave(file = paste(name, type, outformat, sep = \".\"), height = h, width = w)  \n\
 }  \n\
   \n\
-spectra_cn_plot  <-  function(hist, name, zero=\"\", cutoff=\"\", w=6, h=4.5, x_max, y_max, type=\"all\", pdf=FALSE) {  \n\
+spectra_cn_plot  <-  function(hist, name, zero=\"\", cutoff=\"\", w=6, h=4.5, x_max, y_max, type, pdf=FALSE) {  \n\
   # Read hist  \n\
   dat=read.table(hist, header=TRUE)  \n\
   dat[,1]=factor(dat[,1], levels=unique(dat[,1]), ordered=TRUE) # Lock in the order  \n\
@@ -180,17 +180,17 @@ spectra_cn_plot  <-  function(hist, name, zero=\"\", cutoff=\"\", w=6, h=4.5, x_
     outformat=\"pdf\"  \n\
   }  \n\
     \n\
-  if (type == \"all\" || type == \"line\") {  \n\
+  if (type == \"line\") {  \n\
     plot_line(dat, name, x_max, y_max, zero = dat_0, cutoff = dat_cut)  \n\
     save_plot(name=name, type=\"ln\", outformat, h=h, w=w)  \n\
   }  \n\
     \n\
-  if (type == \"all\" || type == \"fill\") {  \n\
+  else if (type == \"fill\") {  \n\
     plot_fill(dat, name, x_max, y_max, zero = dat_0, cutoff = dat_cut)  \n\
     save_plot(name=name, type=\"fl\", outformat, h=h, w=w)  \n\
   }  \n\
     \n\
-  if (type == \"all\" || type == \"stack\") {  \n\
+  else {  # type == \"stack\")  \n\
     plot_stack(dat, name, x_max, y_max, zero = dat_0, cutoff = dat_cut)  \n\
     save_plot(name=name, type=\"st\", outformat, h=h, w=w)  \n\
   }  \n\

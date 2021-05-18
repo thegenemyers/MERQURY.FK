@@ -203,39 +203,29 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
     sprintf(extra," -z %s.cnz",troot);
   else
     sprintf(extra,"");
-  if (LINE+FILL+STACK == 3)
-    { sprintf(command,"%s%s 2>/tmp/NULL",what,extra);
+  if (LINE)
+    { sprintf(command,"%s -t line%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
 #endif
       system(command);
     }
-  else
-    { if (LINE)
-        { sprintf(command,"%s -t line%s 2>/tmp/NULL",what,extra);
+  if (FILL)
+    { sprintf(command,"%s -t fill%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
-          printf("%s\n",command);
-          fflush(stdout);
+      printf("%s\n",command);
+      fflush(stdout);
 #endif
-          system(command);
-        }
-      if (FILL)
-        { sprintf(command,"%s -t fill%s 2>/tmp/NULL",what,extra);
+      system(command);
+    }
+  if (STACK)
+    { sprintf(command,"%s -t stack%s 2>/tmp/NULL",what,extra);
 #ifdef DEBUG
-          printf("%s\n",command);
-          fflush(stdout);
+      printf("%s\n",command);
+      fflush(stdout);
 #endif
-          system(command);
-        }
-      if (STACK)
-        { sprintf(command,"%s -t stack%s 2>/tmp/NULL",what,extra);
-#ifdef DEBUG
-          printf("%s\n",command);
-          fflush(stdout);
-#endif
-          system(command);
-        }
+      system(command);
     }
 
   sprintf(command,"rm -f %s.cni %s.cnz %s.R",troot,troot,troot);
