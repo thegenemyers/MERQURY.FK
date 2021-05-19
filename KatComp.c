@@ -277,8 +277,8 @@ int main(int argc, char *argv[])
         fprintf(stderr,"      -x: max x as a real-valued multiple of x* with max\n");
         fprintf(stderr,"              count 'peak' away from the origin\n");
         fprintf(stderr,"      -X: max x as an int value in absolute terms\n");
-        fprintf(stderr,"      -y: max y as a real-valued multiple of max count\n");
-        fprintf(stderr,"              'peak' away from the origin\n");
+        fprintf(stderr,"      -y: max y as a real-valued multiple of y* with max\n");
+        fprintf(stderr,"              count 'peak' away from the origin\n");
         fprintf(stderr,"      -Y: max y as an int value in absolute terms\n");
         fprintf(stderr,"\n");
         fprintf(stderr,"      -l: draw line plot\n");

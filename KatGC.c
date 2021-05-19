@@ -20,7 +20,7 @@
 #include "kgc_plot.R.h"
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
-                         " [-[xX]<number(k2.1)>] [-lfb] [-pdf] [-T<int(4)>]",
+                         " [-[xX]<number(x2.1)>] [-lfs] [-pdf] [-T<int(4)>]",
                          " [-o<output>] <source>[.ktab]"
                        };
 
