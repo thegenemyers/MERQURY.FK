@@ -496,12 +496,10 @@ int main(int argc, char *argv[])
         row1 = PLOT[i+1];
         for (a = 0; a < XMAX; a++)
           { val = (row0[a]+row0[a+1]+row1[a]+row1[a+1])/4;
-            if (val > 0)
-              { if (val > ZMAX)
-                  fprintf(f,"%d.5\t%d.5\t%lld\n",i,a,ZMAX);
-                else
-                  fprintf(f,"%d.5\t%d.5\t%lld\n",i,a,val);
-              }
+            if (val > ZMAX)
+              fprintf(f,"%d.5\t%d.5\t%lld\n",i,a,ZMAX);
+            else
+              fprintf(f,"%d.5\t%d.5\t%lld\n",i,a,val);
           }
       }
     fclose(f);
