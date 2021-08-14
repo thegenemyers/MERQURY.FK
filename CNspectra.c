@@ -50,7 +50,7 @@ static char *Usage = " [-v] [-T<int(4)>] [-pdf] [-lfs] <read> <asm1> [<asm2>] <o
 //    OUT.spectra-cn.* (if 2 haploids)
 //    OUT.qv
 //    OUT.ASM[i].qv
-//    OUT.completeness-stats
+//    OUT.completeness.stats
 //    OUT.ASM_only.bed
 
 static char template[16] = "._CNS.XXXX";
@@ -342,7 +342,7 @@ int main(int argc, char *argv[])
           err = 1. - pow(1.-(1.*miss)/total,1./KMER);
           qv  = -10.*log10(err); 
           if (i == 0)
-            fprintf(qvs,"Assembly\tNo Supprt\tTotal\tError %%\tQV\n");
+            fprintf(qvs,"Assembly\tNo Support\tTotal\tError %%\tQV\n");
           fprintf(qvs,"%s\t%lld\t%lld\t%.4f\t%.1f\n",A,miss,total,100.*err,qv);
           fclose(qvs);
         }
@@ -364,7 +364,7 @@ int main(int argc, char *argv[])
                           NTHREADS,troot,SOLID_THRESH,ASM[0],READS);
           system(command);
       
-          cps = fopen(Catenate(OUT,"","",".completeness_stats"),"a");
+          cps = fopen(Catenate(OUT,"","",".completeness.stats"),"a");
 
           sprintf(Hname,"%s.0",troot);
           H = Load_Histogram(Hname);
@@ -438,7 +438,7 @@ int main(int argc, char *argv[])
                 ASM[0],ASM[1],A1uA2,READS);
         system(command);
       
-        cps = fopen(Catenate(OUT,"","",".completeness_stats"),"a");
+        cps = fopen(Catenate(OUT,"","",".completeness.stats"),"a");
         fprintf(cps,"Assembly\t%% Covered\n");
 
         sprintf(Hname,"%s.0",troot);

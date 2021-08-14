@@ -18,7 +18,7 @@
 
 #include "libfastk.h"
 
-static char *Usage = " [-v] <read> [<mat> <pat>] <asm1> [<asm2>] <out>";
+static char *Usage = " [-v] [-T<int(4)>] [-pdf] [-lfs] <read> [<mat> <pat>] <asm1> [<asm2>] <out>";
 
 //  Expected inputs from FastK ...
 //    READS.hist     FastK -t1 -kKMER [...] <read_data> -NREAD
@@ -28,8 +28,8 @@ static char *Usage = " [-v] <read> [<mat> <pat>] <asm1> [<asm2>] <out>";
 //    ASM[i].READS.prof   FastK -p:READS -kKMER [...] <assembly_i> -NASM[i].READS
 //
 //  Outputs:
-//    OUT.ASM[i].spectra-cn.*
-//    OUT.spectra-asm.*
+//    OUT.spectra-cn.ASM[i].spectra-cn.*
+//    OUT.spectra-cn.spectra-asm.*
 //    OUT.spectra-cn.* (if 2 haploids)
 //    OUT.qv
 //    OUT.ASM[i].qv
@@ -45,6 +45,9 @@ static int   VERBOSE;
 
 int main(int argc, char *argv[])
 { char  *READS, *MAT, *PAT, *ASM[2], *OUT;
+  int    LINE, FILL, STACK;
+  int    PDF;
+  int    NTHREADS;
   
   //  Command line processing
 
@@ -54,14 +57,28 @@ int main(int argc, char *argv[])
 
     (void) eptr;
 
-    ARG_INIT("Merqury");
+    ARG_INIT("CNSpectra");
+
+    PDF      = 0;
+    NTHREADS = 4;
 
     j = 1;
     for (i = 1; i < argc; i++)
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("v")
+            ARG_FLAGS("vlfs")
+            break;
+          case 'p':
+            if (strcmp("df",argv[i]+2) == 0)
+              PDF = 1;
+            else
+              { fprintf(stderr,"%s: don't recognize option %s\n",Prog_Name,argv[i]);
+                exit (1);
+              }
+            break;
+          case 'T':
+            ARG_POSITIVE(NTHREADS,"Number of threads")
             break;
         }
       else
@@ -69,6 +86,9 @@ int main(int argc, char *argv[])
     argc = j;
 
     VERBOSE = flags['v'];
+    LINE    = flags['l'];
+    FILL    = flags['f'];
+    STACK   = flags['s'];
 
     if (argc < 4 || argc > 7)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage);
@@ -109,6 +129,21 @@ int main(int argc, char *argv[])
         ASM[1] = NULL;
       }
     OUT = argv[argc-1];
+  }
+
+  { char command[1000];
+
+    if (VERBOSE)
+      { if (MAT != NULL)
+          fprintf(stderr,"\n  Running Merqury in trio mode ...\n");
+        else
+          fprintf(stderr,"\n  Running Merqury in non-trio mode ...\n");
+      }
+
+    sprintf(comman,"CNspectra%s%s%s%s%s -T%d %s %s%s%s %s\n",
+                   VERBOSE?" -v ":"",PDF?" -pdf":"",LINE?" -l":"",STACK?" -s":"",FILL?" -f":"",
+                   NTHREADS,READS,ASM[0],ASM[1]!=NULL?" ":"",ASM[1]!=NULL?ASM[1]:"",OUT);
+    system(command);
   }
 
   Catenate(NULL,NULL,NULL,NULL);

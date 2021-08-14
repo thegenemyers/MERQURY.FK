@@ -1,8 +1,8 @@
-# MerquryFK: Fast & Simple
+# MerquryFK & KatFK: Fast & Simple
   
 <font size ="4">**_Authors:  Gene Myers & Arang Rhie_**<br>
 **_First:   Feb 24, 2021_**<br>
-**_Current: Feb 24, 2021_**</font>
+**_Current: Aug 11, 2021_**</font>
 
 - [Command Line](#command-line)
   - [CNplot](#CNplot)
@@ -10,13 +10,14 @@
   - [CNspectra](#CNspectra)
   - [KatComp](#KatComp)
   - [KatGC](#KatGC)
-
+  - [Smudges](#Smudges)
 
 ## Command Line
 
 The original **Merqury** is a collection of R and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
 **MerquryFK** replaces meryl with the **FastK** k-mer counter suite to considerably speed up analyses.
-Moreover, all the R and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.
+Moreover, all the R and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  In addition, we have realized some analyses, KatComp and KatGC, that one finds
+only in the somewhat similary **KAT** k-mer suite developed at the Earlham Institute.
 
 There are some general conventions for our tools programmed for your convenience.
 First, suffix extensions need not be given for arguments of known type.  For example,
@@ -118,7 +119,7 @@ produced by CNspectra.  Specifically, it *can* produce:
 
 * **\<out>.qv**: error and qv of each assembly as a whole
 
-* **\<out>.completeness-stats**: coverage of solid read k-mers by the assemblies and their union (if two are given).
+* **\<out>.completeness.stats**: coverage of solid read k-mers by the assemblies and their union (if two are given).
 
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
@@ -127,7 +128,7 @@ the number of threads used in those bits of CNspectra that are threaded.
 
 CNspectra uses the default dimensions and scaling parameters of CNplot and ASMplot when
 producing plots and always with the -z option set.  These settings can be reset by redefining
-a easily identifiable set of defined constants at the top of CNspectra.c
+an easily identifiable set of defined constants at the top of CNspectra.c
 
 
 <a name="KatComp"></a>
@@ -167,3 +168,34 @@ The controlling options are almost identical to those of CNplot, save that
 The -l option produces a contour **line** plot of count iso-lines.   The -f option produces
 a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
 **stacked** on top of it.
+
+
+<a name="Smudges"></a>
+
+```
+6. Smudges [-w<double(6.0)>] [-h<double(4.5)>]
+           [-vk] [-lfs] [-pdf] [-T<int(4)>]
+           [-o<output>] [-e<int(4)>] <source>[.ktab]
+```
+
+This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)
+that produces "cleaner" smudges by avoiding false het-mer signals.  In addition to displaying smudges the program tries to estimate the ploidy of the genome albeit this
+is not guaranteed to always be correct.
+
+Almost all the options (-w, -h, -v, -lfs, -pdf, -o, -T) control the output file name and type, display, and number of threads used exactly as describe for [CNplot](#CNplot).
+
+Any k-mer with a count of less than -e in the input FastK table \<source> is considered
+an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table that is trimmed to threshold -e.  If the supplied table does not meet these specification,
+then the program takes additional compute time to make is so, but if in a preprocessing
+step you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
+requirements than this time is saved.
+
+Even if the input table is symmetric and trimmed to the appropriate -e, the bulk of the
+time taken by Smudges is in accumulating count statistics of het-mer pairs.  If the
+-k option is given then the table of het-mer pair statistics is **k**ept, being stored
+in a file with
+the output root name and suffix **.smu**.  This saved table can then be used in a
+subsequent calls to Smudges, so that the counting step is avoided.  One must continue to
+specify the -k option or this ``short-cut'' table will be deleted upon completion.  The program further
+conservatively reminds you each time of the table and asks you if you actually want
+to use it.
