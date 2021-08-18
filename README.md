@@ -182,11 +182,11 @@ This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudg
 that produces "cleaner" smudges by avoiding false het-mer signals.  In addition to displaying smudges the program tries to estimate the ploidy of the genome albeit this
 is not guaranteed to always be correct.
 
-Almost all the options (-w, -h, -v, -lfs, -pdf, -o, -T) control the output file name and type, display, and number of threads used exactly as describe for [CNplot](#CNplot).
+Almost all the options (-w, -h, -v, -lfs, -pdf, -o, -T) control the output file name and type, display, and number of threads used exactly as described for [CNplot](#CNplot).
 
 Any k-mer with a count of less than -e in the input FastK table \<source> is considered
 an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table that is trimmed to threshold -e.  If the supplied table does not meet these specification,
-then the program takes additional compute time to make is so, but if in a preprocessing
+then the program takes additional compute time to make it so, but if in a preprocessing
 step you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
 requirements than this time is saved.
 
@@ -195,7 +195,6 @@ time taken by Smudges is in accumulating count statistics of het-mer pairs.  If 
 -k option is given then the table of het-mer pair statistics is **k**ept, being stored
 in a file with
 the output root name and suffix **.smu**.  This saved table can then be used in a
-subsequent calls to Smudges, so that the counting step is avoided.  One must continue to
-specify the -k option or this ``short-cut'' table will be deleted upon completion.  The program further
-conservatively reminds you each time of the table and asks you if you actually want
-to use it.
+subsequent calls to Smudges, so that the counting step is avoided.   Each call of the program conservatively reminds you of this table (if present) and asks you if you want
+to use it and skip het-mer counting.  One must continue to
+specify the -k option or this ``short-cut'' table will be deleted on exit. 
