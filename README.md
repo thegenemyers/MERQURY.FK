@@ -48,7 +48,7 @@ by default they are 6 x 4.5 inches.
 
 The maximum x-coordinate (k-mer frequency) and y-coordinate (k-mer count) can be set
 in either an absolute or relative fashion.  If absolute one specifes the maxima as integer
-arguments to the -X and -Y options.  CN spectrum typically have peaks away from the origin.
+arguments to the -X and -Y options.  CN spectra typically have peaks away from the origin.
 The x and y coordinates of the highest of these peaks, say x\*,y\* provide a relative
 landmark for setting the axis limits and with the -x and -y options one can set the maximums
 as a multiple of x\* or y\*.  By default, CNplot sets the axis maximums to x\*&#183;2.1 and y\*&#183;1.1.
@@ -80,9 +80,9 @@ computational cost for CNplot.
 ```
 
 ASMplot has the same optional parameters with the same meaning as CNplot.  What is
-different is that this program looks at the spectra of the reads that (a) are in neither
+different is that this program looks at the spectra of the k-mers that (a) are in neither
 asm1 or asm2, (b) in asm1 but not asm2, (c) in asm2 but not asm1, and (d) in both asm1 and
-asm2.  If asm2 is missing, then it looks at the spectra of the reads that are and are not
+asm2.  If asm2 is missing, then it looks at the spectra of the k-mers that are and are not
 in asm1.  The legend is appropriately labeled.
 
 <a name="CNspectra"></a>
