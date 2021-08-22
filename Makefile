@@ -27,7 +27,7 @@ KatComp: KatComp.c libfastk.c kx_plot.R.h
 KatGC: KatGC.c libfastk.c kgc_plot.R.h
 	gcc $(CFLAGS) -o KatGC KatGC.c libfastk.c -lpthread -lm
 
-Smudges: Smudges.c libfastk.c libfastk.h matrix.c matrix.h
+Smudges: Smudges.c smu_plot.R.h libfastk.c libfastk.h matrix.c matrix.h
 	$(CC) $(CFLAGS) -o Smudges Smudges.c libfastk.c matrix.c -lpthread -lm
 
 clean:

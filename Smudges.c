@@ -28,7 +28,7 @@
 #undef  DEBUG_SCAN
 #undef  DEBUG_BIG_SCAN
 #undef  DEBUG_PLOIDY
-#define ANALYZE_PLOIDY
+#undef  ANALYZE_PLOIDY
 
 #include "libfastk.h"
 #include "matrix.h"
@@ -1059,8 +1059,8 @@ int    Nsmu[5]     = { 1, 1, 2, 3, 4 };
 char  *Names[5][4] = { { "AB", NULL, NULL, NULL },
                        { "AAB", NULL, NULL, NULL },
                        { "AAAB", "AABB", NULL, NULL },
-                       { "AAAAAB", "AAAABB", "AAABBB", NULL },
-                       { "AAAAAAAB", "AAAAAABB", "AAAAABBB", "AAAABBBB" } };
+                       { "5A1B", "4A2B", "3A3B", NULL },
+                       { "7A1B", "6A2B", "5A3B", "4A4B" } };
 int    Rail[5][4]  = { { 48, 0, 0, 0 },
                        { 33, 0, 0, 0 },
                        { 25, 48, 0, 0 },
@@ -1422,11 +1422,10 @@ int determine_ploidy(int cover, int64 *row)
   printf("\n%10lld : %10lld : AB 100%%\n",Df,Ds);
   printf("%10lld : %10lld : AAB 100%%\n",Tf,Ts);
   printf("%10lld : %10lld : AAAB %.1f%% + AABB %.1f%%\n",Qf,Qs,QB1/10.,QB2/10.);
-  printf("%10lld : %10lld : AAAAAB %.1f%% + AAAABB %.1f%% + AAABBB %.1f%%\n",
+  printf("%10lld : %10lld : 6A1B %.1f%% + 4A2B %.1f%% + 3A3B %.1f%%\n",
          Hf,Hs,HB1/10.,HB2/10.,HB3/10.);
-  printf("%10lld : %10lld : AAAAAAAB %.1f%% + AAAAAABB %.1f%% + AAAAABBB %.1f%%",
-         Of,Os,OB1/10.,OB2/10.,OB3/10.);
-  printf(" + AAAABBBB %.1f%%\n",OB4/10.);
+  printf("%10lld : %10lld : 7A1B %.1f%% + 6A2B %.1f%% + 5A3B %.1f%% + 4A4B %.1f%%\n",
+         Of,Os,OB1/10.,OB2/10.,OB3/10.,OB4/10.);
 #endif
 
   { int b, i;
@@ -1436,22 +1435,35 @@ int determine_ploidy(int cover, int64 *row)
       if (lsqr[b] > lsqr[i])
         b = i; 
 
+#ifdef ANALYZE_PLOIDY
     if (ploidy != b)
       { printf("Conflict %d vs %d\n",ploidy,b);
         if (ploidy < b)
           { if (Deco[b][0] < .5*Deco[ploidy][0])
               printf("  Peak choice seems OK\n");
             else
-              { ploidy = b;
-                printf("  Switch to greater fit choice\n");
-              }
+              printf("  Switch to greater fit choice\n");
           }
         else
           printf("  Peak choice is greater, so OK\n");
       }
     else
       printf("Fit & Ploidy match %d\n",b);
+#endif
+
+    if (ploidy < b)
+      { if (Deco[b][0] >= .5*Deco[ploidy][0])
+          ploidy = b;
+      }
   }
+
+  if (ploidy != 1)
+    { int k = 48;
+      while (row[k-1] > row[k] && k > 43)
+        k -= 1;
+      if (k > 43)
+        Rail[ploidy][Nsmu[ploidy]-1] = k;
+    }
 
   return (ploidy);
 }
@@ -1614,6 +1626,7 @@ int main(int argc, char *argv[])
   int    PDF;
   double XDIM, YDIM;
   char  *OUT;
+  char  *SRC;
 
   //  Process command line arguments
 
@@ -1708,8 +1721,9 @@ int main(int argc, char *argv[])
         exit (1);
       }
 
+    SRC = Root(argv[1],".ktab");
     if (OUT == NULL)
-      OUT = Root(argv[1],".ktab");
+      OUT = SRC;
 
     troot = mktemp(template);
   }
@@ -1748,9 +1762,9 @@ int main(int argc, char *argv[])
     char tname[100];
     int  symm, trim;
 
-    T = Open_Kmer_Stream(argv[1]);
+    T = Open_Kmer_Stream(SRC);
     if (T == NULL)
-      { fprintf(stderr,"%s: Cannot open k-mer table %s\n",Prog_Name,argv[1]);
+      { fprintf(stderr,"%s: Cannot open k-mer table %s\n",Prog_Name,SRC);
         exit (1);
       }
 
@@ -1774,7 +1788,7 @@ int main(int argc, char *argv[])
     KBYTE = T->kbyte;
     TBYTE = T->tbyte;
 
-    sprintf(tname,"%s",argv[1]);
+    sprintf(tname,"%s",SRC);
     input = NULL;
 
     //  Trim source table to k-mers with counts >= ETHRESH if needed
@@ -2206,8 +2220,8 @@ skip_build:
 
     //  Call the R plotter with arguments
 
-    sprintf(command,"Rscript %s.R -f %s.smu -a %s.sma -o %s%s -x %g -y %g",
-                    troot,troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM);
+    sprintf(command,"Rscript %s.R -f %s.smu -a %s.sma -o %s%s -x %g -y %g -s %s",
+                    troot,troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,SRC);
     capend = command+strlen(command);
     if (LINE)
       { sprintf(capend," -t contour 2>/tmp/NULL");
@@ -2236,7 +2250,7 @@ skip_build:
 
     //  Remove the temp files
 
-    // sprintf(command,"rm -f %s.smu %s,sma %s.R",troot,troot,troot);
+    sprintf(command,"rm -f %s.smu %s.sma %s.R",troot,troot,troot);
     system(command);
 
     if ( ! KEEP)
@@ -2244,6 +2258,8 @@ skip_build:
         system(command);
       }
   }
+
+  free(SRC);
 
   Catenate(NULL,NULL,NULL,NULL);
   Numbered_Suffix(NULL,0,NULL);
