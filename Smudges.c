@@ -1658,7 +1658,11 @@ int main(int argc, char *argv[])
             ARG_REAL(YDIM);
             break;
           case 'o':
-            OUT = argv[i]+2;
+            if (OUT == NULL)
+              free(OUT);
+            OUT = Strdup(argv[i]+2,"Allocating name");
+            if (OUT == NULL)
+              exit (1);
             break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
@@ -1721,9 +1725,9 @@ int main(int argc, char *argv[])
         exit (1);
       }
 
-    SRC = Root(argv[1],".ktab");
+    SRC = argv[1];
     if (OUT == NULL)
-      OUT = SRC;
+      OUT = Root(argv[1],".ktab");
 
     troot = mktemp(template);
   }
@@ -1741,16 +1745,17 @@ int main(int argc, char *argv[])
         while ((a = getc(stdin)) != '\n')
           if (a == 'y' || a == 'Y')
             bypass = 1;
-      }
 
-    if (bypass)
-      { PLOT    = Malloc(sizeof(int64 *)*(SMAX+1),"Allocating thread working memory");
-        PLOT[0] = Malloc(sizeof(int64)*(SMAX+1)*(FMAX+1),"Allocating plot");
-        for (a = 1; a <= SMAX; a++)
-          PLOT[a] = PLOT[a-1] + (FMAX+1);
-        fread(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
+        if (bypass)
+          { PLOT    = Malloc(sizeof(int64 *)*(SMAX+1),"Allocating thread working memory");
+            PLOT[0] = Malloc(sizeof(int64)*(SMAX+1)*(FMAX+1),"Allocating plot");
+            for (a = 1; a <= SMAX; a++)
+              PLOT[a] = PLOT[a-1] + (FMAX+1);
+            fread(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
+          }
+
+        fclose(f);
       }
-    fclose(f);
   }
 
   if (bypass)
@@ -1758,9 +1763,14 @@ int main(int argc, char *argv[])
 
   //  Open input table and see if it needs conditioning
 
-  { char command[1000];
-    char tname[100];
-    int  symm, trim;
+  { char *command;
+    char *tname;
+    int   symm, trim;
+
+    tname   = Malloc(strlen(SRC) + strlen(troot) + 10,"Allocating strings");
+    command = Malloc(strlen(SRC) + strlen(troot) + 100,"Allocating strings");
+    if (tname == NULL || command == NULL)
+      exit (1);
 
     T = Open_Kmer_Stream(SRC);
     if (T == NULL)
@@ -1838,13 +1848,16 @@ int main(int argc, char *argv[])
         sprintf(tname,"%s.symx",troot);
       }
 
-    //  input is the name of the relevant contitioned table, unless the original => NULL
+    //  input is the name of the relevant conditioned table, unless the original => NULL
 
+    free(command);
     if (!(symm && trim))
-      { input = Strdup(tname,"Allocating source name");
+      { input = tname;
         Free_Kmer_Stream(T);
         T = Open_Kmer_Stream(input);
       }
+    else
+      free(tname);
   }
 
   if (VERBOSE)
@@ -1978,7 +1991,7 @@ int main(int argc, char *argv[])
     free(Pair);
     free(Divpt);
 
-    { char   command[1000];
+    { char  *command;
       int64 *plot0, *plott;
       int    i;
 
@@ -2004,11 +2017,16 @@ int main(int argc, char *argv[])
       PLOT = parm[0].plot;
 
       if (input != NULL)
-        { sprintf(command,"Fastrm %s",input);
+        { command = Malloc(strlen(input)+100,"Allocating strings");
+          if (command == NULL)
+            exit (1);
+          sprintf(command,"Fastrm %s",input);
           if (system(command) != 0)
             { fprintf(stderr,"%s: Something went wrong with command:\n    %s\n",Prog_Name,command);
               exit (1);
             }
+          free(command);
+          free(input);
         }
     }
   }
@@ -2044,7 +2062,7 @@ skip_build:
     int64 *row, v, vmax;
     double fact;
     FILE  *f;
-    char   command[1000], *capend;
+    char  *command, *capend;
     int64  cvr[PIXELS], hivr[SMAX];
     int64  cmax;
     int    cwch, cover, ploidy;
@@ -2220,8 +2238,12 @@ skip_build:
 
     //  Call the R plotter with arguments
 
+   command = Malloc(strlen(troot)*3 + strlen(OUT)*2 + 500,"Allocating strings");
+   if (command == NULL)
+     exit (1);
+
     sprintf(command,"Rscript %s.R -f %s.smu -a %s.sma -o %s%s -x %g -y %g -s %s",
-                    troot,troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,SRC);
+                    troot,troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,OUT);
     capend = command+strlen(command);
     if (LINE)
       { sprintf(capend," -t contour 2>/tmp/NULL");
@@ -2257,9 +2279,11 @@ skip_build:
       { sprintf(command,"rm -f %s.smu",OUT);
         system(command);
       }
+
+    free(command);
   }
 
-  free(SRC);
+  free(OUT);
 
   Catenate(NULL,NULL,NULL,NULL);
   Numbered_Suffix(NULL,0,NULL);
