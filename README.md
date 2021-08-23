@@ -100,7 +100,7 @@ to find:
 
 * **\<asm>.ktab & .prof** produced by <code>FastK -t1 -p -k\<K> [...] \<assembly> -N\<asm></code>
 
-* **\<asm>.\<read>.prof** produced by <code>FastK -p:<read> -k\<K> [...] \<assembly> -N\<asm></code>
+* **\<asm>.\<read>.prof** produced by <code>FastK -p:\<read> -k\<K> [...] \<assembly> -N\<asm></code>
 
 where the k-mer size \<K> is the same for all calls.
 
