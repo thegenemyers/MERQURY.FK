@@ -10,7 +10,7 @@
   - [CNspectra](#CNspectra)
   - [KatComp](#KatComp)
   - [KatGC](#KatGC)
-  - [Smudges](#Smudges)
+  - [PloidyPlot](#PloidyPlot)
 
 ## Command Line
 
@@ -170,12 +170,12 @@ a **filled** heat map of the counts.  The -s option produces a heap map with a c
 **stacked** on top of it.
 
 
-<a name="Smudges"></a>
+<a name="PloidyPlot"></a>
 
 ```
-6. Smudges [-w<double(6.0)>] [-h<double(4.5)>]
-           [-vk] [-lfs] [-pdf] [-T<int(4)>]
-           [-o<output>] [-e<int(4)>] <source>[.ktab]
+6. PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
+              [-vk] [-lfs] [-pdf] [-T<int(4)>]
+              [-o<output>] [-e<int(4)>] <source>[.ktab]
 ```
 
 This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)
@@ -191,10 +191,10 @@ step you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](
 requirements than this time is saved.
 
 Even if the input table is symmetric and trimmed to the appropriate -e, the bulk of the
-time taken by Smudges is in accumulating count statistics of het-mer pairs.  If the
+time taken by PloidyPlot is in accumulating count statistics of het-mer pairs.  If the
 -k option is given then the table of het-mer pair statistics is **k**ept, being stored
 in a file with
 the output root name and suffix **.smu**.  This saved table can then be used in a
-subsequent calls to Smudges, so that the counting step is avoided.   Each call of the program conservatively reminds you of this table (if present) and asks you if you want
+subsequent calls to PloidyPlot, so that the counting step is avoided.   Each call of the program conservatively reminds you of this table (if present) and asks you if you want
 to use it and skip het-mer counting.  One must continue to
 specify the -k option or this ``short-cut'' table will be deleted on exit. 

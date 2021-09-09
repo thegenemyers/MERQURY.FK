@@ -1636,7 +1636,7 @@ int main(int argc, char *argv[])
     int    flags[128];
     char  *eptr;
 
-    ARG_INIT("Smudges");
+    ARG_INIT("PloidyPlot");
     XDIM = 6.0;
     YDIM = 4.5;
     PDF  = 0;

@@ -2,7 +2,7 @@ DEST_DIR = ~/bin
 
 CFLAGS = -O3 -Wall -Wextra -Wno-unused-result -fno-strict-aliasing
 
-ALL = CNplot ASMplot CNspectra KatComp KatGC Smudges
+ALL = CNplot ASMplot CNspectra KatComp KatGC PloidyPlot
 
 all: $(ALL)
 
@@ -27,8 +27,8 @@ KatComp: KatComp.c libfastk.c kx_plot.R.h
 KatGC: KatGC.c libfastk.c kgc_plot.R.h
 	gcc $(CFLAGS) -o KatGC KatGC.c libfastk.c -lpthread -lm
 
-Smudges: Smudges.c smu_plot.R.h libfastk.c libfastk.h matrix.c matrix.h
-	$(CC) $(CFLAGS) -o Smudges Smudges.c libfastk.c matrix.c -lpthread -lm
+PloidyPlot: PloidyPlot.c smu_plot.R.h libfastk.c libfastk.h matrix.c matrix.h
+	$(CC) $(CFLAGS) -o PloidyPlot PloidyPlot.c libfastk.c matrix.c -lpthread -lm
 
 clean:
 	rm -f $(ALL)
