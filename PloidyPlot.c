@@ -2063,7 +2063,7 @@ skip_build:
     double fact;
     FILE  *f;
     char  *command, *capend;
-    int64  cvr[PIXELS], hivr[SMAX];
+    int64  rsum[SMAX];
     int64  cmax;
     int    cwch, cover, ploidy;
 
@@ -2079,15 +2079,19 @@ skip_build:
 #endif
     fprintf(f,"KF1\tKF2\tCount\n");
 
-    //  Stretch fractional axes along each row of PLOT table
+    //  Stretch rows to fractional axis in place, scale to preserve row sums!
+    //    Row goes from [0,FMAX) to [0,PIXEL)
 
     for (i = 2*ETHRESH; i < SMAX; i++)
-      { row = PLOT[i];
+      { int64  old, new;
+        double imp;
+
+        row = PLOT[i];
 
         for (p = 0; p < PIXELS; p++)
           inter[p] = -1;
 
-        hivr[i] = 0;
+        old = 0;
         for (a = ETHRESH; a <= i/2; a++)
           { if (i%2 == 0)
               p = (PIXEL2*a)/i;
@@ -2099,9 +2103,10 @@ skip_build:
               inter[p] = row[a];
             else
               inter[p] += row[a];
-            hivr[i] += row[a];
+            old += row[a];
           }
 
+        new = 0;
         nov = 1;
         for (p = 0; p < PIXELS; p++)
           if (inter[p] < 0)
@@ -2120,6 +2125,7 @@ skip_build:
                   w = q-r;
                   while (p < q)
                     { row[p] = (low*(q-p) + hgh*(p-r))/w;
+                      new += row[p];
                       p += 1;
                     }
                   p -= 1;
@@ -2127,31 +2133,37 @@ skip_build:
             }
           else
             { row[p] = inter[p];
+              new += row[p];
               nov = 0;
             }
+
+        rsum[i] = old;
+        if (new == 0)
+          imp = 1.;
+        else
+          imp = (1.*old)/new;
+
+        for (p = 0; p < PIXELS; p++)
+          if (row[p] > 0)
+            row[p] *= imp;
       }
 
+    //  Determine A+B scaling and max in wide/smax
+
     vmax = 0;
-    for (i = 2*ETHRESH; i <= SMAX; i++)
-      { v = 0;
-        for (a = 0; a < PIXELS; a++)
-          if (v < PLOT[i][a])
-            v = PLOT[i][a];
-        if (vmax < v)
-          { vmax = v;
-            smax = i;
-          }
-      }
-    for (i = SMAX; i > 2*smax; i--)
-      { v = 0;
-        for (a = 0; a < PIXELS; a++)
-          if (v < PLOT[i][a])
-            v = PLOT[i][a];
-        if (v > .02*vmax)
+    for (i = 2*ETHRESH; i < SMAX; i++)
+      if (vmax < rsum[i])
+        { vmax = rsum[i];
+          smax = i;
+        }
+    for (i = SMAX-1; i > 2*smax; i--)
+      { if (rsum[i] > .02*vmax)
           break;
       }
     wide = (i-1)/PIXELS+1;
     smax = PIXELS*wide;
+
+    //  reduce A+B resolution by scaling factor and output array
 
     a = wide;
     while (a <= 2*ETHRESH)
@@ -2179,32 +2191,36 @@ skip_build:
 
     fclose(f);
 
-    a = (2*ETHRESH)/wide;
-    for (i = 0; i < a; i++)
-      cvr[i] = 0;
+    //  determine row cwch with max count in reduced space
+
     cmax = 0;
     cwch = -1;
-    for (i = a; i < PIXELS; i++)
+    for (i = (2*ETHRESH)/wide; i < PIXELS; i++)
       { v = 0;
         for (p = 0; p < PIXELS; p++)
           v += PLOT[i][p];
-        cvr[i] = v;
         if (v > cmax)
           { cmax = v;
             cwch = i;
           }
       }
 
+    //  refine coverage to row in original spcae with max count (among rows comprising cwch)
+
     cover = cwch*wide;
     for (i = cwch*wide+1; i < cwch*wide + (cwch-1); i++)
-      if (hivr[i] > hivr[cover])
+      if (rsum[i] > rsum[cover])
         cover = i;
 
 #ifdef ANALYZE_PLOIDY
     printf("\nCoverage is %d\n",cover);
 #endif
 
+    //  ploidy analysis on the row cwch
+
     ploidy = determine_ploidy(cover, PLOT[cwch]);
+
+    //  output analysis for R script
 
     f = fopen(Catenate(troot,".sma","",""),"w");
 #ifdef DEBUG

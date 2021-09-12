@@ -189,7 +189,7 @@ my_plot <- function(hist, asn, name, h=5, w=5, x_max, type, pdf=FALSE, s) { \n\
  \n\
   M <- M + theme(legend.position='none'); \n\
  \n\
-  cvr <- aggregate(x=dat$Count,by=list(dat$KF1),FUN=max); \n\
+  cvr <- aggregate(x=dat$Count,by=list(dat$KF1),FUN=sum); \n\
   C <- ggplot(cvr, aes(x=Group.1,y=x)) + geom_col(fill=hc, color=\"black\", width=1.0) + \n\
          coord_flip(xlim=c(0,50), expand=FALSE) + \n\
          theme(axis.title=element_blank(), axis.text=element_blank(), axis.ticks=element_blank()) + \n\
