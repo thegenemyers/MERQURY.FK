@@ -1055,6 +1055,9 @@ static void *small_window(void *args)
  *
  *****************************************************************************************/
 
+char  *Ploidy[5]   = { "diploid", "triploid", "tetraploid", "hexaploid", "octaploid" };
+int    Nloidy[6]   = { 2, 3, 4, 6, 8 };
+
 int    Nsmu[5]     = { 1, 1, 2, 3, 4 };
 char  *Names[5][4] = { { "AB", NULL, NULL, NULL },
                        { "AAB", NULL, NULL, NULL },
@@ -1758,9 +1761,6 @@ int main(int argc, char *argv[])
       }
   }
 
-  if (bypass)
-    goto skip_build;
-
   //  Open input table and see if it needs conditioning
 
   { char *command;
@@ -1778,6 +1778,13 @@ int main(int argc, char *argv[])
         exit (1);
       }
 
+    KMER  = T->kmer;
+    KBYTE = T->kbyte;
+    TBYTE = T->tbyte;
+
+    if (bypass)
+      goto skip_build;
+
     examine_table(T,&trim,&symm);
 
     if (VERBOSE)
@@ -1793,10 +1800,6 @@ int main(int argc, char *argv[])
           else
             fprintf(stderr," untrimmed and not symmetric\n");
       }
-
-    KMER  = T->kmer;
-    KBYTE = T->kbyte;
-    TBYTE = T->tbyte;
 
     sprintf(tname,"%s",SRC);
     input = NULL;
@@ -2297,6 +2300,21 @@ skip_build:
       }
 
     free(command);
+
+    if (VERBOSE)
+      { fprintf(stderr,"\nAnalysis summary:\n");
+        fprintf(stderr,"  k = %d\n",KMER);
+        fprintf(stderr,"  p = %d\n",Nloidy[ploidy]);
+        fprintf(stderr,"  ploidy = %s\n",Ploidy[ploidy]);
+        fprintf(stderr,"  1n = %.1f\n",(1.*cover)/Nloidy[ploidy]);
+        fprintf(stderr,"  partition =");
+        for (i = 0; i < Nsmu[ploidy]; i++)
+          { if (i > 0)
+              fprintf(stderr,", ");
+            fprintf(stderr," %s:%.1f%%",Names[ploidy][i],Deco[ploidy][i]/10.);
+          }
+        fprintf(stderr,"\n");
+      }
   }
 
   free(OUT);

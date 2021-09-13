@@ -124,7 +124,7 @@ my_plot <- function(hist, asn, name, h=5, w=5, x_max, type, pdf=FALSE, s) { \n\
  \n\
   cover  <- sms[1,5]; \n\
   ploidy <- sms[1,6]+1; \n\
-  Ploid  <- c( \"Diploid\", \"Triploid\", \"Quadraploid\", \"Hexaploid\", \"Octaploid\" ); \n\
+  Ploid  <- c( \"Diploid\", \"Triploid\", \"Tetraploid\", \"Hexaploid\", \"Octaploid\" ); \n\
   Nhaps  <- c( 2, 3, 4, 6, 8 ); \n\
  \n\
   icov <- sms[1,3]; \n\
