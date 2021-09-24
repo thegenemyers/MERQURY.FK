@@ -234,7 +234,7 @@ fflush(stdout);
   else
     sprintf(extra,"");
   if (LINE+FILL+STACK == 3)
-    { sprintf(command,"%s%s 2>/tmp/NULL",what,extra);
+    { sprintf(command,"%s%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -243,7 +243,7 @@ fflush(stdout);
     }
   else
     { if (LINE)
-        { sprintf(command,"%s -t line%s 2>/tmp/NULL",what,extra);
+        { sprintf(command,"%s -t line%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
           printf("%s\n",command);
           fflush(stdout);
@@ -251,7 +251,7 @@ fflush(stdout);
           system(command);
         }
       if (FILL)
-        { sprintf(command,"%s -t fill%s 2>/tmp/NULL",what,extra);
+        { sprintf(command,"%s -t fill%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
           printf("%s\n",command);
           fflush(stdout);
@@ -259,7 +259,7 @@ fflush(stdout);
           system(command);
         }
       if (STACK)
-        { sprintf(command,"%s -t stack%s 2>/tmp/NULL",what,extra);
+        { sprintf(command,"%s -t stack%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
           printf("%s\n",command);
           fflush(stdout);

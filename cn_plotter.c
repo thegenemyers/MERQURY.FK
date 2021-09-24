@@ -204,7 +204,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
   else
     sprintf(extra,"");
   if (LINE)
-    { sprintf(command,"%s -t line%s 2>/tmp/NULL",what,extra);
+    { sprintf(command,"%s -t line%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -212,7 +212,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
       system(command);
     }
   if (FILL)
-    { sprintf(command,"%s -t fill%s 2>/tmp/NULL",what,extra);
+    { sprintf(command,"%s -t fill%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -220,7 +220,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
       system(command);
     }
   if (STACK)
-    { sprintf(command,"%s -t stack%s 2>/tmp/NULL",what,extra);
+    { sprintf(command,"%s -t stack%s 2>/dev/NULL",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);

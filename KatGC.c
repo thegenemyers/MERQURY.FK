@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
                     troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,SOURCE);
     capend = command+strlen(command);
     if (LINE)
-      { sprintf(capend," -t contour 2>/tmp/NULL");
+      { sprintf(capend," -t contour 2>/dev/NULL");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -454,7 +454,7 @@ int main(int argc, char *argv[])
         system(command);
       }
     if (FILL)
-      { sprintf(capend," -t heat 2>/tmp/NULL");
+      { sprintf(capend," -t heat 2>/dev/NULL");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -462,7 +462,7 @@ int main(int argc, char *argv[])
         system(command);
       }
     if (BOTH)
-      { sprintf(capend," -t combo 2>/tmp/NULL");
+      { sprintf(capend," -t combo 2>/dev/NULL");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
