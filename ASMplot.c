@@ -32,7 +32,7 @@ static void check_table(char *name)
   int   kmer;
   FILE *f;
   
-  if (strcmp(name+(strlen(name)-5),".ktab") == 0)
+  if (strcmp(name+(strlen(name)-5),".ktab") != 0)
     name = Catenate(name,".ktab","","");
 
   f = fopen(name,"r");

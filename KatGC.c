@@ -387,7 +387,10 @@ int main(int argc, char *argv[])
       }
 
     if (XMAX == 0)
-      XMAX = XREL*xmax;
+      { XMAX = XREL*xmax;
+        if (XMAX > HMAX)
+          XMAX = HMAX;
+      }
   }
 
   //  Plot matrix

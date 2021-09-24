@@ -263,6 +263,7 @@ int main(int argc, char *argv[])
     char       ArelR[1000];
     char       A1uA2[1000];
     char       Hname[1000];
+    int64      total[2];
     char      *troot;
     Histogram *Rhist;
     int        i, k;
@@ -308,7 +309,7 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < 2; i++)
       { char  *A = ASM[i];
-        int64  miss, total;
+        int64  miss;
 
         if (A == NULL)
           continue;
@@ -328,7 +329,7 @@ int main(int argc, char *argv[])
         //  Compute scaffold QV's and make bed file
 
         sprintf(ArelR,"%s.%s",A,READS);
-        total = scan_asm(A,ArelR,OUT);
+        total[i] = scan_asm(A,ArelR,OUT);
 
         //  Output global qv
 
@@ -339,11 +340,11 @@ int main(int argc, char *argv[])
             qvs = fopen(Catenate(OUT,"","",".qv"),"w");
           else
             qvs = fopen(Catenate(OUT,"","",".qv"),"a");
-          err = 1. - pow(1.-(1.*miss)/total,1./KMER);
+          err = 1. - pow(1.-(1.*miss)/total[i],1./KMER);
           qv  = -10.*log10(err); 
           if (i == 0)
             fprintf(qvs,"Assembly\tNo Support\tTotal\tError %%\tQV\n");
-          fprintf(qvs,"%s\t%lld\t%lld\t%.4f\t%.1f\n",A,miss,total,100.*err,qv);
+          fprintf(qvs,"%s\t%lld\t%lld\t%.4f\t%.1f\n",A,miss,total[i],100.*err,qv);
           fclose(qvs);
         }
       }
@@ -393,7 +394,7 @@ int main(int argc, char *argv[])
     //  2 haploid assemblies ...
 
     else
-      { int64      miss, total;
+      { int64      miss;
         Histogram *H;
         FILE      *cps, *qvs;
         double     err, qv;
@@ -403,17 +404,13 @@ int main(int argc, char *argv[])
 
         //  Form the "k-mer union" of the two assemblies
 
-        sprintf(command,"Logex -T%d -h1 '%s.U = A|+B' %s %s",NTHREADS,troot,ASM[0],ASM[1]);
+        sprintf(command,"Logex -T%d '%s.U = A|+B' %s %s",NTHREADS,troot,ASM[0],ASM[1]);
         system(command);
 
         //  Make a CN spectra plot for the union
 
         sprintf(Out,"%s.spectra-cn",OUT);
         sprintf(A1uA2,"%s.U",troot);
-
-        H = Load_Histogram(A1uA2);
-        total = H->hist[1];
-        Free_Histogram(H);
 
         miss = cnplot(Out,A1uA2,READS,
                       PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
@@ -422,9 +419,9 @@ int main(int argc, char *argv[])
         //  Output global qv
 
         qvs = fopen(Catenate(OUT,"","",".qv"),"a");
-        err = 1. - pow(1.-(1.*miss)/total,1./KMER);
+        err = 1. - pow(1.-(1.*miss)/(total[0]+total[1]),1./KMER);
         qv  = -10.*log10(err); 
-        fprintf(qvs,"Both\t%lld\t%lld\t%.4f\t%.1f\n",miss,total,100.*err,qv);
+        fprintf(qvs,"Both\t%lld\t%lld\t%.4f\t%.1f\n",miss,total[0]+total[1],100.*err,qv);
         fclose(qvs);
 
         //  Compute & output completeness stats
@@ -433,7 +430,7 @@ int main(int argc, char *argv[])
           fprintf(stderr,"\n Computing completeness stats for %s and %s\n",ASM[0],ASM[1]);
 
         sprintf(command,
-                "Logex -H1 -T%d '%s.0 = A-D[%d-]' '%s.1=B-D[%d-]' '%s.2=C-D[%d-]' %s %s %s %s",
+                "Logex -H1 -T%d '%s.0 = A&.D[%d-]' '%s.1=B&.D[%d-]' '%s.2=C&.D[%d-]' %s %s %s %s",
                 NTHREADS,troot,SOLID_THRESH,troot,SOLID_THRESH,troot,SOLID_THRESH,
                 ASM[0],ASM[1],A1uA2,READS);
         system(command);
@@ -443,20 +440,20 @@ int main(int argc, char *argv[])
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
-                                                  (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[0],H->hist[1],SOLID_COUNT,
+                                                  H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.1",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[1],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
-                                                  (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[1],H->hist[1],SOLID_COUNT,
+                                                  H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.2",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"both\tall\t%lld\t%lld\t%.2f\n",(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
-                                                    (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"both\tall\t%lld\t%lld\t%.2f\n",H->hist[1],SOLID_COUNT,
+                                                    H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         fclose(cps);
