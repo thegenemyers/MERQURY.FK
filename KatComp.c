@@ -22,7 +22,7 @@
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y2.1)>]",
                          " [-lfs] [-pdf] [-T<int(4)>]",
-                         " [-o<output>] <source1>[.ktab] <source2>[.ktab]"
+                         " <source1>[.ktab] <source2>[.ktab] <out>"
                        };
 
 static int NTHREADS;
@@ -155,13 +155,9 @@ static void *merge_thread(void *args)
 
 static char template[15] = "._KX.XXXX";
 
-static int check_table(char *name, char *extn, int lmer)
-{ int   kmer, elen;
+static int check_table(char *name, int lmer)
+{ int   kmer;
   FILE *f;
-
-  elen = strlen(extn);
-  if (strcmp(name+(strlen(name)-elen),extn) != 0)
-    name = Catenate(name,extn,"","");
 
   f = fopen(name,"r");
   if (f == NULL)
@@ -207,7 +203,6 @@ int main(int argc, char *argv[])
     XMAX = 0;
     YMAX = 0;
     PDF  = 0;
-    OUT  = NULL;
     NTHREADS = 4;
 
     j = 1;
@@ -219,9 +214,6 @@ int main(int argc, char *argv[])
             break;
           case 'h':
             ARG_REAL(YDIM);
-            break;
-          case 'o':
-            OUT = argv[i]+2;
             break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
@@ -266,7 +258,7 @@ int main(int argc, char *argv[])
     FILL  = flags['f'];
     BOTH  = flags['s'];
 
-    if (argc != 3)
+    if (argc != 4)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
@@ -288,22 +280,18 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
         fprintf(stderr,"\n");
-        fprintf(stderr,"      -o: root name for output plots\n");
-        fprintf(stderr,"          default is root path of <asm> argument\n");
-        fprintf(stderr,"\n");
         fprintf(stderr,"      -T: number of threads to use\n");
         exit (1);
       }
 
     if (LINE+FILL+BOTH == 0)
       LINE = FILL = BOTH = 1;
-    if (OUT == NULL)
-      OUT = Root(argv[1],".ktab");
-    SOURCE1 = argv[1];
-    SOURCE2 = argv[2];
+    SOURCE1 = Root(argv[1],".ktab");
+    SOURCE2 = Root(argv[2],".ktab");
+    OUT     = argv[3];
 
-    KMER = check_table(SOURCE1,".ktab",0);
-    KMER = check_table(SOURCE2,".ktab",KMER);
+    KMER = check_table(Catenate(SOURCE1,".ktab","",""),0);
+    KMER = check_table(Catenate(SOURCE2,".ktab","",""),KMER);
 
     if (XMAX == 0)
       HMAX = 1000;
@@ -317,8 +305,6 @@ int main(int argc, char *argv[])
 
   //  Compute the K-mer cross product matrix (JMAX x HMAX)
 
-
-
   { Kmer_Stream  *T, *U;
     int64     range[NTHREADS+1][2];
 #ifndef DEBUG_THREADS
@@ -330,8 +316,8 @@ int main(int argc, char *argv[])
     int       t, a, i;
     int64     p;
   
-    T = Open_Kmer_Stream(argv[1]);
-    U = Open_Kmer_Stream(argv[2]);
+    T = Open_Kmer_Stream(SOURCE1);
+    U = Open_Kmer_Stream(SOURCE2);
 
     range[0][0] = 0;
     range[NTHREADS][0] = T->nels;
@@ -523,7 +509,7 @@ int main(int argc, char *argv[])
                     troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,SOURCE1,SOURCE2);
     capend = command+strlen(command);
     if (LINE)
-      { sprintf(capend," -t contour 2>/dev/NULL");
+      { sprintf(capend," -t contour 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -531,7 +517,7 @@ int main(int argc, char *argv[])
         system(command);
       }
     if (FILL)
-      { sprintf(capend," -t heat 2>/dev/NULL");
+      { sprintf(capend," -t heat 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -539,7 +525,7 @@ int main(int argc, char *argv[])
         system(command);
       }
     if (BOTH)
-      { sprintf(capend," -t combo 2>/dev/NULL");
+      { sprintf(capend," -t combo 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -552,6 +538,9 @@ int main(int argc, char *argv[])
     sprintf(command,"rm -f %s.kx %s.R",troot,troot);
     system(command);
   }
+
+  free(SOURCE2);
+  free(SOURCE1);
 
   Catenate(NULL,NULL,NULL,NULL);
   Numbered_Suffix(NULL,0,NULL);

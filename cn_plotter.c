@@ -20,7 +20,7 @@
 
 #include "cn_plot.R.h"
 
-int64 cnplot(char  *OUT, char  *ASM, char  *READS,
+void cn_plot(char  *OUT, char  *ASM, char  *READS,
              double XDIM, double YDIM,
              double XREL, double YREL,
              int    XMAX, int64  YMAX,
@@ -32,7 +32,6 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
   char      extra[1000];
   Histogram *H[7];
   int        i, k;
-  int64      errors;
   char      *Label[] = { "read-only", "1", "2", "3", "4", ">4" };
   FILE      *f;
 
@@ -156,6 +155,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
   if (ZGRAM)
     { int    high = H[6]->high;
       int64 *hist = H[6]->hist;
+      int64  val;
 
       f = fopen(Catenate(troot,".cnz","",""),"w");
 #ifdef DEBUG
@@ -166,16 +166,12 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
       fflush(stdout);
 #endif
       fprintf(f,"1\t0\t%lld\n",hist[1]);
-      errors = 0;
+      val = 0;
       for (k = 2; k <= high; k++)
-        errors += hist[k];
-      fprintf(f,"2\t0\t%lld\n",errors);
+        val += hist[k];
+      fprintf(f,"2\t0\t%lld\n",val);
       fclose(f);
-
-      errors += hist[1];
     }
-  else
-    errors = 0;
 
   //  Remove all the FastK histograms except A-B
 
@@ -192,7 +188,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
     printf("Generating %s\n",Catenate(troot,".R","",""));
   fflush(stdout);
 #endif
-  fwrite(cn_plot,strlen(cn_plot),1,f);
+  fwrite(cn_plot_script,strlen(cn_plot_script),1,f);
   fclose(f);
 
   //  Call the R plotter with arguments
@@ -204,7 +200,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
   else
     sprintf(extra,"");
   if (LINE)
-    { sprintf(command,"%s -t line%s 2>/dev/NULL",what,extra);
+    { sprintf(command,"%s -t line%s 2>/dev/null",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -212,7 +208,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
       system(command);
     }
   if (FILL)
-    { sprintf(command,"%s -t fill%s 2>/dev/NULL",what,extra);
+    { sprintf(command,"%s -t fill%s 2>/dev/null",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -220,7 +216,7 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
       system(command);
     }
   if (STACK)
-    { sprintf(command,"%s -t stack%s 2>/dev/NULL",what,extra);
+    { sprintf(command,"%s -t stack%s 2>/dev/null",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
@@ -230,6 +226,4 @@ int64 cnplot(char  *OUT, char  *ASM, char  *READS,
 
   sprintf(command,"rm -f %s.cni %s.cnz %s.R",troot,troot,troot);
   system(command);
-
-  return (errors);
 }

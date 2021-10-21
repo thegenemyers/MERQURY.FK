@@ -1,4 +1,4 @@
-static char *cn_plot =
+static char *cn_plot_script =
 "#!/usr/bin/env Rscript  \n\
   \n\
 require(\"argparse\")  \n\

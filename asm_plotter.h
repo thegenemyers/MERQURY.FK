@@ -14,7 +14,7 @@
 #include <dirent.h>
 #include <math.h>
 
-void asmplot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
+void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
               double XDIM, double YDIM,
               double XREL, double YREL,
               int    XMAX, int64  YMAX,

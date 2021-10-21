@@ -4,20 +4,24 @@
 **_First:   Feb 24, 2021_**<br>
 **_Current: Aug 11, 2021_**</font>
 
-- [Command Line](#command-line)
+- [Introduction](#introduction)
+  - [HAPmaker](#HAPmaker)
   - [CNplot](#CNplot)
   - [ASMplot](#ASMplot)
-  - [CNspectra](#CNspectra)
+  - [HAPplot](#HAPplot)
+  - [MerquryFK](#MerquryFK)
   - [KatComp](#KatComp)
   - [KatGC](#KatGC)
   - [PloidyPlot](#PloidyPlot)
 
-## Command Line
+## Introduction
 
 The original **Merqury** is a collection of R and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
 **MerquryFK** replaces meryl with the **FastK** k-mer counter suite to considerably speed up analyses.
 Moreover, all the R and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  In addition, we have realized some analyses, KatComp and KatGC, that one finds
 only in the somewhat similary **KAT** k-mer suite developed at the Earlham Institute.
+Lastly, we include in this collection, **PloidyPlot** which is an improved version of the
+ploidy plotting tool SmudgePlots.
 
 There are some general conventions for our tools programmed for your convenience.
 First, suffix extensions need not be given for arguments of known type.  For example,
@@ -30,13 +34,41 @@ have typed out an entire CNplot command (1. below) but forgot that you wanted .p
 All you do is append -pdf to what you've already typed and then hit return.  So for example,
 ```CNplot -w4 -h3 Assembly -ls Reads -pdf``` is acceptable input.
 
+For the tools that take a FastK k-mer table as an input, we use the syntax \<name>[.ktab],
+to describe it on the command line indicating that the .ktab extension is optional as
+per the convention above.  Regardless of whether the extension is given, it is expected
+that the associated histogram file \<name>.hist is also present (this file is always
+produced by a run of FastK that produces a k-mer table).  Also note carefully that these
+tables must be produced with the option -t1 set so that all k-mers that occur 1 or more
+times in the underlying data set are in the table.
+
+<br>
+
+<a name="HAPmaker"></a>
+
+```
+1. HAPmaker [-v] [-T<int(4).] <mat>[.ktab] <pat>[.ktab] <child>[.ktab]
+```
+
+Prior to running either HAPplot or MerquryFK in trio mode, one must produce a table
+of the **hap-mers** for both the mother and father given FastK k-mer tables of the
+maternal, paternal, and child sequence data sets.
+These k-mers are those in the given parent that are specific to that parent, inherited
+by the child, and reliable in that they are unlikely to be error k-mers.
+The names of the resulting k-mer tables produced are \<mat>.hap.ktab and \<pat>.hap.ktab.
+
+The -T option can be used to control the number of threads used, and -v turns on verbose
+reporting to the standard error.
+
+<br>
+
 <a name="CNplot"></a>
 
 ```
-1. CNplot [-w<double(6.0)>] [-h<double(4.5)>]
+2. CNplot [-w<double(6.0)>] [-h<double(4.5)>]
           [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-          [-lfs] [-pdf] [-z] [-T<int(4)>]
-          [-o<output>] <asm>[.ktab] <reads>[.ktab]
+          [-v] [-lfs] [-pdf] [-z] [-T<int(4)>]
+          <reads>[.ktab] <asm:dna> <out>
 ```
 
 Given k-mer tables, produced by FastK, for an assembly, \<asm>,
@@ -56,88 +88,113 @@ as a multiple of x\* or y\*.  By default, CNplot sets the axis maximums to x\*&#
 CNplot can produce any of a line plot, a filled plot, or a so-called stacked plot where the individual histograms accumulate.  By default it produces all three, but the user can select any subset with the options -l (line), -f (fill), and -s (stack).  By default the plots are .png's
 but one can request .pdf's with the -pdf option.
 
-The root path name for the output plots can be set with the -o option.  A suffix of .ln, .fl, or
-.st is added for the line, fill, and stack plots, respectively, followed by either .png or .pdf.
-If the -o option is not set, then the root path name is that of the \<asm> argument.
+The root path name for the output plots is given by the final \<out> argument.  A suffix of .ln, .fl, or .st is added for the line, fill, and stack plots, respectively, followed
+by either .png or .pdf.  If the -o option is not set, then the root path name is that of
+the \<asm> argument.
 
-If the -z option is set, then CNplot plots at 0, the # of k-mers in \<asm> - \<reads> broken down
-into those that are unique or those that are not.
+If the -z option is set, then CNplot plots at 0, the # of k-mers in \<asm> - \<reads>
+broken down into those that are unique or those that are not.
 
-The -T option controls the number of threads used by FastK's "Logex" which is the dominant
-computational cost for CNplot.
+The -T option can be used to control the number of threads used, and -v turns on verbose
+reporting to the standard error.
 
 *Implement and describe -c ?*
 
+<br>
 
 <a name="ASMplot"></a>
 
-
 ```
-2. ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
+3. ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
            [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-           [-lfs] [-pdf] [-z] [-T<int(4)>]
-           [-o<output>] <asm1>[.ktab] [<asm2>[.ktab]] <reads>[.ktab]
+           [-v] [-lfs] [-pdf] [-z] [-T<int(4)>]
+           <reads>[.ktab] <asm1:dna> [<asm2:dna>] <out>
 ```
 
 ASMplot has the same optional parameters with the same meaning as CNplot.  What is
 different is that this program looks at the spectra of the k-mers that (a) are in neither
 asm1 or asm2, (b) in asm1 but not asm2, (c) in asm2 but not asm1, and (d) in both asm1 and
-asm2.  If asm2 is missing, then it looks at the spectra of the k-mers that are and are not
-in asm1.  The legend is appropriately labeled.
+asm2.  If asm2 is missing, then it looks at the spectra of the read k-mers that are and
+are not in asm1.  The legend is appropriately labeled.
 
-<a name="CNspectra"></a>
+<br>
+
+<a name="HAPplot"></a>
 
 ```
-3. CNspectra [-v] [-lfs] [-pdf] [-T<int(4)>] <read> <asm1> [<asm2>] <out>
+4. HAPplot [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>]
+           <mat>[.hap[.ktab]] <pat>[.hap[.ktab] <asm1:dna> [<asm2:dna>] <out>
 ```
 
-CNspectra produces copy-number spectra plots for each assembly, a copy-number spectra plot of the union of both assemblies (if two are present), an assembly spectra plot, and tables of qv and completeness statistics, as well as a .bed file of potential error locations in each supplied assembly.
+HAPplot has the relevant optional parameters of CNplot with the same meaning.
+It produces a haplotype blob plot of assembly \<asm1> and if present \<asm2> given 
+hap-mer tables \<mat>.hap.ktab, and \<pat>.hap.ktab produced earlier by HAPmaker.
+Each assembly contig is plotted as a blob where its size is porportional
+to the contigs length in bases, and its position (x,y) where x = # of maternal hap-mers,
+and y = # of paternal hap-mers, in the contig.
 
-The primary input arguments -- \<read>, \<asm1>, and \<asm2> (if present) -- are expected to be the root path names of FastK tables, histograms, and profiles.  Specifically, CNspectra expects
-to find:
+<br>
 
-* **\<read>.hist & .ktab** produced by <code>FastK -t1 -k\<K> [...] \<read_data> -N\<read></code>
+<a name="MerquryFK"></a>
 
-* **\<asm>.ktab & .prof** produced by <code>FastK -t1 -p -k\<K> [...] \<assembly> -N\<asm></code>
+```
+5. MerquryFK [-v] [-lfs] [-pdf] [-T<int(4)>]
+                <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]
+                <asm1:dna> [<asm2:dna>] <out>
+```
 
-* **\<asm>.\<read>.prof** produced by <code>FastK -p:\<read> -k\<K> [...] \<assembly> -N\<asm></code>
-
-where the k-mer size \<K> is the same for all calls.
+MerquryFK runs all the analyses performed by the original Merqury suite where it will
+run the trio analyses if hap-mer tables (produced by HAPmaker above) are supplied for the mother and father read data sets, and will assume a single unphased assembly if only \<asm1> is given, or two phased, haplotype assemblies if \<asm2> is also given.  The assemblies are assumed to be in a dna-sequence file format acceptable to FastK (i.e. fasta or fastq, compressed or not, and cram, bam, sam, or a Dazzler DB).
 
 The primary output argument -- \<out> -- is the root path name for all the output files
-produced by CNspectra.  Specifically, it *can* produce:
+produced by MerquryFK.  Specifically, it will produce the following where \<asm> is the name of an assembly file input:
 
-* **\<out>.\<asm>.spectra-cn.***: cn-spectra plots of \<asm>
+* **\<out>.\<asm>.spectra-cn.(ln+fl+st).(pdf | png)**: cn-spectra plots of \<asm> versus \<reads>
 
 * **\<out>.\<asm>.qv**: error and qv table for each scaffold of \<asm>
 
-* **\<out>.\<asm>_only.bed**: a .bed file of the locations where the assembly has k-mer's not supported by the read data set.
+* **\<out>.\<asm>_only.bed**: a .bed file of the locations where \<asm> has k-mer's not supported by those in \<read>.
 
-* **\<out>.spectra-cn.***: cn-spectra plots of the union of \<asm1> and \<asm2>
+* **\<out>.spectra-cn.(ln+fl+st).(pdf | png)**: cn-spectra plots of \<asm1> U \<asm2> versus \<reads> (if 2 assemblies)
 
-* **\<out>.spectra-asm.***: assembly spectra plots of the assemblies
+* **\<out>.spectra-asm.(ln+fl+st).(pdf | png)**: assembly spectra plots of the assemblies versus \<reads>
 
 * **\<out>.qv**: error and qv of each assembly as a whole
 
 * **\<out>.completeness.stats**: coverage of solid read k-mers by the assemblies and their union (if two are given).
 
+When running in trio mode it further outputs where \<hap> is either \<mat> or \<pat>:
+
+* **\<out>.\<asm>.\<hap>.spectra-cn.(ln+fl+st).(pdf | png)***: cn-spectra plots of \<asm> versus \<hap>
+
+* **\<out>.hapmers.blob.(pdf | png)**: haplotype phased blob plot of the assemblies contigs colored by assembly
+
+* **\<out>.\<asm>.phased_block.bed**: putative phased intervals of an assembly determined with the hapmer tables.
+
+* **\<out>.\<asm>.phased_block.blob.(pdf | png)**: phased blob plot of the putative blocks colored by phase
+
+* **\<out>.\<asm>.phased_block.stats**: short summary of block partitioning of \<asm>
+
+* **\<out>.\<asm>.block.N.(pdf | png)**: length histogram of phase-colored blocks of \<asm> in order of largest to smallest scaled to N x-axis.
+
+* **\<out>.\<asm>.continuity.N.(pdf | png)**: N-plots of haplotype blocks and contigs and if present scaffolds.
+
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
 If no plot types are set, then all 3 are produced.  Finally, the -T option controls
-the number of threads used in those bits of CNspectra that are threaded.
+the number of threads used in those bits of MerquryFK that are threaded.
 
-CNspectra uses the default dimensions and scaling parameters of CNplot and ASMplot when
-producing plots and always with the -z option set.  These settings can be reset by redefining
-an easily identifiable set of defined constants at the top of CNspectra.c
+MerquryFK uses the default dimensions and scaling parameters of CNplot, ASMplot, and HAPplot when producing plots and always with the -z option set.  These settings can be reset by redefining an easily identifiable set of defined constants at the top of the code file MerquryFK.c
 
+<br>
 
 <a name="KatComp"></a>
 
 ```
-4. KatComp [-w<double(6.0)>] [-h<double(4.5)>]
+6. KatComp [-w<double(6.0)>] [-h<double(4.5)>]
            [-[xX]<number(x2.1)>] [-[yY]<number(y2.1)>]
            [-lfs] [-pdf] [-T<int(4)>]
-           [-o<output>] <source1[.ktab] <source2>[.ktab]
+           <source1[.ktab] <source2>[.ktab] <out>
 ```
 
 Given two FastK k-mer tables, `<source1>` and `<source2>`, with the same k-mer size, *KatComp* produces a 3D heat map or contour map of the product of the two k-mer
@@ -151,12 +208,14 @@ a **filled** heat map of the counts.  The -s option produces a heap map with a c
 
 Another difference with CNplot, is that the y-axis denotes the frequency of k-mers in the second data set, rather than the count of k-mers in the lone data set.
 
+<br>
+
 <a name="KatGC"></a>
 
 ```
-5. KatGC [-w<double(6.0)>] [-h<double(4.5)>]
+7. KatGC [-w<double(6.0)>] [-h<double(4.5)>]
          [-[xX]<number(x2.1)>] [-lfs] [-pdf] [-T<int(4)>]
-         [-o<output>] <source>[.ktab]
+         <source>[.ktab] <out>
 ```
 
 Given a k-mer table, `<source>`, produced by FastK, *KatGC* produces a 3D heat map
@@ -169,13 +228,14 @@ The -l option produces a contour **line** plot of count iso-lines.   The -f opti
 a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
 **stacked** on top of it.
 
+<br>
 
 <a name="PloidyPlot"></a>
 
 ```
-6. PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
+8. PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
               [-vk] [-lfs] [-pdf] [-T<int(4)>]
-              [-o<output>] [-e<int(4)>] <source>[.ktab]
+              [-e<int(4)>] <source>[.ktab] <out>
 ```
 
 This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)

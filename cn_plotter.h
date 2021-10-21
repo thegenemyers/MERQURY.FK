@@ -7,7 +7,7 @@
  *
  *********************************************************************************************/
  
-int64 cnplot(char  *OUT, char  *ASM, char  *READS,
+void cn_plot(char  *OUT, char  *ASM, char  *READS,
              double XDIM, double YDIM,
              double XREL, double YREL,
              int    XMAX, int64  YMAX,

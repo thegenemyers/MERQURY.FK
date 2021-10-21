@@ -2265,7 +2265,7 @@ skip_build:
                     troot,troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,OUT);
     capend = command+strlen(command);
     if (LINE)
-      { sprintf(capend," -t contour 2>/dev/NULL");
+      { sprintf(capend," -t contour 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -2273,7 +2273,7 @@ skip_build:
         system(command);
       }
     if (FILL)
-      { sprintf(capend," -t heat 2>/dev/NULL");
+      { sprintf(capend," -t heat 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -2281,7 +2281,7 @@ skip_build:
         system(command);
       }
     if (BOTH)
-      { sprintf(capend," -t combo 2>/dev/NULL");
+      { sprintf(capend," -t combo 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);

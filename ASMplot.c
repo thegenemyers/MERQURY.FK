@@ -21,20 +21,16 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-lfs] [-pdf] [-z] [-T<int(4)>]",
-                         " [-o<output>] <asm1>[.ktab] [<asm2>[.ktab]] <reads>[.ktab]"
+                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>]",
+                         " <reads>[.ktab] <asm1dna> [<asm2:.dna>] <out>"
                        };
 
 static char template[15] = "._ASM.XXXX";
 
-static void check_table(char *name)
-{ static int KMER = 0;
-  int   kmer;
+static int check_table(char *name, int lmer)
+{ int   kmer;
   FILE *f;
   
-  if (strcmp(name+(strlen(name)-5),".ktab") != 0)
-    name = Catenate(name,".ktab","","");
-
   f = fopen(name,"r");
   if (f == NULL)
     { fprintf(stderr,"%s: Cannot find FastK table %s\n",Prog_Name,name);
@@ -42,18 +38,19 @@ static void check_table(char *name)
     }
   else
     { fread(&kmer,sizeof(int),1,f);
-      if (KMER == 0)
-        KMER = kmer;
-      else if (kmer != KMER)
-        { fprintf(stderr,"%s: Kmer (%d) of table %s != %d\n",Prog_Name,kmer,name,KMER);
+      if (lmer != 0 && kmer != lmer)
+        { fprintf(stderr,"%s: Kmer (%d) of table %s != %d\n",Prog_Name,kmer,name,lmer);
           exit (1);
         }
       fclose(f);
+      return (kmer);
     }
 }
 
 int main(int argc, char *argv[])
-{ int    LINE, FILL, STACK;
+{ int    KMER;
+  int    VERBOSE;
+  int    LINE, FILL, STACK;
   int    PDF;
   int    ZGRAM;
   double XDIM, YDIM;
@@ -61,7 +58,7 @@ int main(int argc, char *argv[])
   int    XMAX;
   int64  YMAX;
   char  *OUT;
-  char  *ASM1, *ASM2;
+  char  *ASM[2];
   char  *READS;
   int    NTHREADS;
   
@@ -80,7 +77,6 @@ int main(int argc, char *argv[])
     XMAX = 0;
     YMAX = 0;
     PDF  = 0;
-    OUT  = NULL;
     NTHREADS = 4;
 
     j = 1;
@@ -92,9 +88,6 @@ int main(int argc, char *argv[])
             break;
           case 'h':
             ARG_REAL(YDIM);
-            break;
-          case 'o':
-            OUT = argv[i]+2;
             break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
@@ -139,12 +132,13 @@ int main(int argc, char *argv[])
         argv[j++] = argv[i];
     argc = j;
 
-    LINE  = flags['l'];
-    FILL  = flags['f'];
-    STACK = flags['s'];
-    ZGRAM = flags['z'];
+    VERBOSE = flags['v'];
+    LINE    = flags['l'];
+    FILL    = flags['f'];
+    STACK   = flags['s'];
+    ZGRAM   = flags['z'];
 
-    if (argc != 3 && argc != 4)
+    if (argc != 4 && argc != 5)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
@@ -168,37 +162,64 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"      -z: plot counts of k-mers unique to one or both assemblies\n");
         fprintf(stderr,"\n");
-	fprintf(stderr,"      -o: root name for output plots\n");
-	fprintf(stderr,"          default is root path of <asm> argument\n");
-        fprintf(stderr,"\n");
+        fprintf(stderr,"      -v: verbose output to stderr\n");
         fprintf(stderr,"      -T: number of threads to use\n");
         exit (1);
       }
 
     if (LINE+FILL+STACK == 0)
       LINE = FILL = STACK = 1;
-    if (OUT == NULL)
-      OUT = Root(argv[1],".ktab");
-    ASM1 = argv[1];
-    check_table(ASM1);
-    if (argc == 4)
-      { ASM2  = argv[2];
-        check_table(ASM2);
-        READS = argv[3];
-      }
+    READS  = argv[1];
+    ASM[0] = argv[2];
+    if (argc == 5)
+      ASM[1] = argv[3];
     else
-      { ASM2  = NULL;
-        READS = argv[2];
-      }
-    check_table(READS);
+      ASM[1] = NULL;
+    OUT = argv[argc-1];
   }
 
   { char *troot;
+    char *suffix[9] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db", ".sam", ".bam", ".cram" };
+    char  command[5000];
+    int   i, j, len;
 
     troot = mktemp(template);
 
-    asmplot(OUT,ASM1,ASM2,READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,
-            PDF,ZGRAM,LINE,FILL,STACK,troot,NTHREADS);
+    READS = Root(READS,".ktab");
+
+    KMER = check_table(Catenate(READS,".ktab","",""),0);
+
+    for (i = 0; i < 2; i++)
+      { if (ASM[i] == NULL)
+          continue;
+
+        for (j = 0; j < 9; j++)
+          { len = strlen(ASM[i]) - strlen(suffix[j]);
+            if (strcmp(ASM[i]+len,suffix[j]) == 0)
+              ASM[i][len] = '\0';
+          }
+
+        if (VERBOSE)
+          fprintf(stderr,"\n  Making k-mer table for assembly %s\n",ASM[i]);
+
+        sprintf(command,"FastK -k%d -T%d -t1 %s",KMER,NTHREADS,ASM[i]);
+        system(command);
+      }
+
+    if (VERBOSE)
+      fprintf(stderr,"\n  Making Venn histograms and plotting\n");
+
+    asm_plot(OUT,ASM[0],ASM[1],READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,
+             PDF,ZGRAM,LINE,FILL,STACK,troot,NTHREADS);
+
+    for (i = 0; i < 2; i++)
+      { if (ASM[i] == NULL)
+          continue;
+        sprintf(command,"Fastrm %s",ASM[i]);
+        system(command);
+      }
+
+    free(READS);
   }
 
   Catenate(NULL,NULL,NULL,NULL);

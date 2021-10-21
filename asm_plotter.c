@@ -30,7 +30,7 @@ static int64 GetCount(Histogram *H)
   return (sum);
 }
 
-void asmplot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
+void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
               double XDIM, double YDIM,
               double XREL, double YREL,
               int    XMAX, int64  YMAX,
@@ -222,7 +222,7 @@ fflush(stdout);
     printf("Generating %s\n",Catenate(troot,".R","",""));
   fflush(stdout);
 #endif
-  fwrite(cn_plot,strlen(cn_plot),1,f);
+  fwrite(cn_plot_script,strlen(cn_plot_script),1,f);
   fclose(f);
 
   //  Call the plotter with arguments
@@ -233,39 +233,29 @@ fflush(stdout);
     sprintf(extra," -z %s.asmz",troot);
   else
     sprintf(extra,"");
-  if (LINE+FILL+STACK == 3)
-    { sprintf(command,"%s%s 2>/dev/NULL",what,extra);
+  if (LINE)
+    { sprintf(command,"%s -t line%s 2>/dev/null",what,extra);
 #ifdef DEBUG
       printf("%s\n",command);
       fflush(stdout);
 #endif
       system(command);
     }
-  else
-    { if (LINE)
-        { sprintf(command,"%s -t line%s 2>/dev/NULL",what,extra);
+  if (FILL)
+    { sprintf(command,"%s -t fill%s 2>/dev/null",what,extra);
 #ifdef DEBUG
-          printf("%s\n",command);
-          fflush(stdout);
+      printf("%s\n",command);
+      fflush(stdout);
 #endif
-          system(command);
-        }
-      if (FILL)
-        { sprintf(command,"%s -t fill%s 2>/dev/NULL",what,extra);
+      system(command);
+    }
+  if (STACK)
+    { sprintf(command,"%s -t stack%s 2>/dev/null",what,extra);
 #ifdef DEBUG
-          printf("%s\n",command);
-          fflush(stdout);
+      printf("%s\n",command);
+      fflush(stdout);
 #endif
-          system(command);
-        }
-      if (STACK)
-        { sprintf(command,"%s -t stack%s 2>/dev/NULL",what,extra);
-#ifdef DEBUG
-          printf("%s\n",command);
-          fflush(stdout);
-#endif
-          system(command);
-        }
+      system(command);
     }
 
   sprintf(command,"rm -f %s.asmi %s.asmz %s.R",troot,troot,troot);

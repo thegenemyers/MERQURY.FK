@@ -21,7 +21,7 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-lfs] [-pdf] [-T<int(4)>]",
-                         " [-o<output>] <source>[.ktab]"
+                         " <source>[.ktab] <out>"
                        };
 
 static int NTHREADS;
@@ -139,13 +139,9 @@ static void *merge_thread(void *args)
 
 static char template[15] = "._KGC.XXXX";
 
-static int check_table(char *name, char *extn, int lmer)
-{ int   kmer, elen;
+static int check_table(char *name, int lmer)
+{ int   kmer;
   FILE *f;
-
-  elen = strlen(extn);
-  if (strcmp(name+(strlen(name)-elen),extn) != 0)
-    name = Catenate(name,extn,"","");
 
   f = fopen(name,"r");
   if (f == NULL)
@@ -188,7 +184,6 @@ int main(int argc, char *argv[])
     XREL = 2.1;
     XMAX = 0;
     PDF  = 0;
-    OUT  = NULL;
     NTHREADS = 4;
 
     j = 1;
@@ -200,9 +195,6 @@ int main(int argc, char *argv[])
             break;
           case 'h':
             ARG_REAL(YDIM);
-            break;
-          case 'o':
-            OUT = argv[i]+2;
             break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
@@ -237,7 +229,7 @@ int main(int argc, char *argv[])
     FILL = flags['f'];
     BOTH = flags['s'];
 
-    if (argc != 2)
+    if (argc != 3)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
@@ -255,20 +247,16 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
         fprintf(stderr,"\n");
-        fprintf(stderr,"      -o: root name for output plots\n");
-        fprintf(stderr,"          default is <source> argument\n");
-        fprintf(stderr,"\n");
         fprintf(stderr,"      -T: number of threads to use\n");
         exit (1);
       }
 
     if (LINE+FILL+BOTH == 0)
       LINE = FILL = BOTH = 1;
-    if (OUT == NULL)
-      OUT = Root(argv[1],".ktab");
-    SOURCE = argv[1];
+    SOURCE = Root(argv[1],".ktab");
+    OUT    = argv[2];
 
-    KMER = check_table(SOURCE,".ktab",0);
+    KMER = check_table(Catenate(SOURCE,".ktab","",""),0);
 
     if (XMAX == 0)
       HMAX = 1000;
@@ -446,7 +434,7 @@ int main(int argc, char *argv[])
                     troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM,SOURCE);
     capend = command+strlen(command);
     if (LINE)
-      { sprintf(capend," -t contour 2>/dev/NULL");
+      { sprintf(capend," -t contour 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -454,7 +442,7 @@ int main(int argc, char *argv[])
         system(command);
       }
     if (FILL)
-      { sprintf(capend," -t heat 2>/dev/NULL");
+      { sprintf(capend," -t heat 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -462,7 +450,7 @@ int main(int argc, char *argv[])
         system(command);
       }
     if (BOTH)
-      { sprintf(capend," -t combo 2>/dev/NULL");
+      { sprintf(capend," -t combo 2>/dev/null");
 #ifdef DEBUG
         printf("%s\n",command);
         fflush(stdout);
@@ -475,6 +463,8 @@ int main(int argc, char *argv[])
     sprintf(command,"rm -f %s.kgc %s.R",troot,troot);
     system(command);
   }
+
+  free(SOURCE);
 
   Catenate(NULL,NULL,NULL,NULL);
   Numbered_Suffix(NULL,0,NULL);
