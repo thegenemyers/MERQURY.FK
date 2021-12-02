@@ -88,7 +88,7 @@ plot_contour <- function(dat, s1, s2) {  \n\
   ggplot(data=dat, aes(x=KF2,y=KF1,z=Count)) +  \n\
     geom_contour(aes(z=Count, colour=..level..), bins=12, show.legend=TRUE) +  \n\
     coord_cartesian(xlim=c(0,x_max), ylim=c(0,y_max), expand=FALSE) +  \n\
-    scale_color_viridis(option=\"turbo\", name=\"Distinct K-mers per bin\", labels=fancy_scientific, n.breaks = 6) +  \n\
+    scale_color_viridis(option=\"turbo\", name=\"Distinct K-mers per bin\", labels=fancy_scientific, breaks = 6) +  \n\
     guides(color = guide_legend(title.position = \"left\", ticks = FALSE, draw.llim = TRUE, reverse=TRUE, keyheight=unit(18,\"pt\"))) +  \n\
     xlab(paste(\"K-mer frequency of \", s1, sep=\"\")) +  \n\
     ylab(paste(\"K-mer frequency of \", s2, sep=\"\")) +  \n\

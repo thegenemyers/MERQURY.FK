@@ -99,7 +99,7 @@ plot_contour <- function(dat, source) {  \n\
   ggplot(data=dat, aes(x=KF,y=GCP,z=Count)) +  \n\
     geom_contour(aes(z=Count, colour=..level..), bins=10, show.legend=TRUE) +  \n\
     coord_cartesian(xlim=c(0,x_max), ylim=c(0,y_max), expand=FALSE) +  \n\
-    scale_color_viridis(option=\"turbo\", name=\"Distinct K-mers per bin\", labels=fancy_scientific, n.breaks = 6) +  \n\
+    scale_color_viridis(option=\"turbo\", name=\"Distinct K-mers per bin\", labels=fancy_scientific, breaks = 6) +  \n\
     scale_y_continuous(breaks=seq(0,y_max,y_max/4), labels=percent) +  \n\
     guides(color = guide_legend(title.position = \"left\", ticks = FALSE, draw.llim = TRUE, reverse=TRUE, keyheight=unit(24,\"pt\"))) +  \n\
     xlab(paste(y_max,\"-mer frequency\", sep=\"\")) +  \n\

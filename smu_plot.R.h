@@ -95,7 +95,7 @@ plot_contour <- function(dat, h, ybrk, ylab) { \n\
     geom_contour(aes(z=Count, colour=..level..), bins=12, show.legend=TRUE) + \n\
     coord_cartesian(xlim=c(0,x_max), ylim=c(0,y_max), expand=FALSE) + \n\
     scale_color_viridis(option=\"turbo\", name=\"kmer pairs\", \n\
-                        labels=fancy_scientific, n.breaks = 6) + \n\
+                        labels=fancy_scientific, breaks = 6) + \n\
     scale_x_continuous(breaks=c(12,17,25,33,49), labels=c(\"1/8\",\"1/6\",\"1/4\",\"1/3\",\"1/2\")) + \n\
     scale_y_continuous(breaks=ybrk, labels=ylab) + \n\
     guides(color = guide_legend(title.position = \"top\", frame.colour=\"black\", \n\
