@@ -21,7 +21,7 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>]",
+                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(tmp)>]",
                          " <reads>[.ktab] <asm1dna> [<asm2:.dna>] <out>"
                        };
 
@@ -61,6 +61,7 @@ int main(int argc, char *argv[])
   char  *ASM[2];
   char  *READS;
   int    NTHREADS;
+  char  *SORT_PATH;
   
   { int    i, j, k;
     int    flags[128];
@@ -78,6 +79,7 @@ int main(int argc, char *argv[])
     YMAX = 0;
     PDF  = 0;
     NTHREADS = 4;
+    SORT_PATH = "/tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)
@@ -113,6 +115,9 @@ int main(int argc, char *argv[])
               { fprintf(stderr,"%s: max y scaling factor must be > 0\n",Prog_Name);
                 exit (1);
               }
+            break;
+          case 'P':
+            SORT_PATH = argv[i]+2;
             break;
           case 'T':
             ARG_POSITIVE(NTHREADS,"Number of threads")
@@ -164,6 +169,7 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"      -v: verbose output to stderr\n");
         fprintf(stderr,"      -T: number of threads to use\n");
+        fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         exit (1);
       }
 
@@ -202,7 +208,7 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n  Making k-mer table for assembly %s\n",ASM[i]);
 
-        sprintf(command,"FastK -k%d -T%d -t1 %s",KMER,NTHREADS,ASM[i]);
+        sprintf(command,"FastK -k%d -T%d -P%s -t1 %s",KMER,NTHREADS,SORT_PATH,ASM[i]);
         system(command);
       }
 

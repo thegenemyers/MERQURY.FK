@@ -42,7 +42,7 @@ static int ANCHOR_LENGTH  = 20000;
 
   //  Usage
 
-static char *Usage[3] = { " [-v] [-lfs] [-pdf] [-T<int(4)>]",
+static char *Usage[3] = { " [-v] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(tmp)>]",
                           " <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]",
                           " <asm1:dna> [<asm2:dna>] <out>"
                         };
@@ -565,6 +565,7 @@ int main(int argc, char *argv[])
   int    LINE, FILL, STACK;
   int    PDF;
   int    NTHREADS;
+  char  *SORT_PATH;
 
   char   command[1000];
   char  *troot;
@@ -581,6 +582,7 @@ int main(int argc, char *argv[])
 
     PDF      = 0;
     NTHREADS = 4;
+    SORT_PATH = "\tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)
@@ -596,6 +598,9 @@ int main(int argc, char *argv[])
               { fprintf(stderr,"%s: don't recognize option %s\n",Prog_Name,argv[i]);
                 exit (1);
               }
+            break;
+          case 'P':
+            SORT_PATH = argv[i]+2;
             break;
           case 'T':
             ARG_POSITIVE(NTHREADS,"Number of threads")
@@ -617,6 +622,7 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"      -v: verbose output to stderr\n");
         fprintf(stderr,"      -T: number of threads to use\n");
+        fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         fprintf(stderr,"\n");
         fprintf(stderr,"      -l: draw line plot\n");
         fprintf(stderr,"      -f: draw fill plot\n");
@@ -770,10 +776,11 @@ int main(int argc, char *argv[])
 
           //  Create assembly tables and profiles
 
-          sprintf(command,"FastK -k%d -T%d -t1 -p %s",KMER,NTHREADS,A); 
+          sprintf(command,"FastK -k%d -T%d -P%s -t1 -p %s",KMER,NTHREADS,SORT_PATH,A); 
           system(command);
 
-          sprintf(command,"FastK -k%d -T%d -p:%s %s -N%s.%s",KMER,NTHREADS,READS,A,A,READS); 
+          sprintf(command,"FastK -k%d -T%d -P%s -p:%s %s -N%s.%s",
+                          KMER,NTHREADS,SORT_PATH,READS,A,A,READS); 
           system(command);
 
           //  Make a CN-spectra plot
@@ -1021,10 +1028,12 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Producing relative profiles for phasing block calculation on %s\n",A);
 
-        sprintf(command,"FastK -T8 -k%d -p:%s.hap %s -N%s.%s",KMER,MAT,A,A,MAT);
+        sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s.%s",
+                        NTHREADS,SORT_PATH,KMER,MAT,A,A,MAT);
         system(command);
 
-        sprintf(command,"FastK -T8 -k%d -p:%s.hap %s -N%s.%s",KMER,PAT,A,A,PAT);
+        sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s.%s",
+                        NTHREADS,SORT_PATH,KMER,PAT,A,A,PAT);
         system(command);
 
         if (VERBOSE)

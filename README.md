@@ -67,7 +67,7 @@ reporting to the standard error.
 ```
 2. CNplot [-w<double(6.0)>] [-h<double(4.5)>]
           [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-          [-v] [-lfs] [-pdf] [-z] [-T<int(4)>]
+          [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
           <reads>[.ktab] <asm:dna> <out>
 ```
 
@@ -95,8 +95,9 @@ the \<asm> argument.
 If the -z option is set, then CNplot plots at 0, the # of k-mers in \<asm> - \<reads>
 broken down into those that are unique or those that are not.
 
-The -T option can be used to control the number of threads used, and -v turns on verbose
-reporting to the standard error.
+The -T option can be used to control the number of threads used, -v turns on verbose
+reporting to the standard error, and -P is passed through to the calls to FastK so you can
+specify the temp directory if needed.
 
 *Implement and describe -c ?*
 
@@ -107,7 +108,7 @@ reporting to the standard error.
 ```
 3. ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
            [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-           [-v] [-lfs] [-pdf] [-z] [-T<int(4)>]
+           [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
            <reads>[.ktab] <asm1:dna> [<asm2:dna>] <out>
 ```
 
@@ -122,7 +123,7 @@ are not in asm1.  The legend is appropriately labeled.
 <a name="HAPplot"></a>
 
 ```
-4. HAPplot [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>]
+4. HAPplot [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
            <mat>[.hap[.ktab]] <pat>[.hap[.ktab] <asm1:dna> [<asm2:dna>] <out>
 ```
 
@@ -138,7 +139,7 @@ and y = # of paternal hap-mers, in the contig.
 <a name="MerquryFK"></a>
 
 ```
-5. MerquryFK [-v] [-lfs] [-pdf] [-T<int(4)>]
+5. MerquryFK [-v] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
                 <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]
                 <asm1:dna> [<asm2:dna>] <out>
 ```
@@ -182,7 +183,8 @@ When running in trio mode it further outputs where \<hap> is either \<mat> or \<
 One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
 type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
 If no plot types are set, then all 3 are produced.  Finally, the -T option controls
-the number of threads used in those bits of MerquryFK that are threaded.
+the number of threads used in those bits of MerquryFK that are threaded, and the -P option
+is passed through to the calls to FastK so you can specify the temp directory if needed.
 
 MerquryFK uses the default dimensions and scaling parameters of CNplot, ASMplot, and HAPplot when producing plots and always with the -z option set.  These settings can be reset by redefining an easily identifiable set of defined constants at the top of the code file MerquryFK.c
 
@@ -234,7 +236,7 @@ a **filled** heat map of the counts.  The -s option produces a heap map with a c
 
 ```
 8. PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
-              [-vk] [-lfs] [-pdf] [-T<int(4)>]
+              [-vk] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
               [-e<int(4)>] <source>[.ktab] <out>
 ```
 
@@ -248,7 +250,11 @@ Any k-mer with a count of less than -e in the input FastK table \<source> is con
 an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table that is trimmed to threshold -e.  If the supplied table does not meet these specification,
 then the program takes additional compute time to make it so, but if in a preprocessing
 step you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
-requirements than this time is saved.
+requirements than this time is saved.  If PloidyPlot is forced to make a trimmed, symmetric table for an input,
+say `<A>`, then
+the call to Symmex will use the temp directory specified by the -P option (if not the default "/tmp") and it
+will produce tables `<A>.trim` and `<A>.symx` which are retained to avoid repeating their computation if PloidyPlot
+is called again on the same input.
 
 Even if the input table is symmetric and trimmed to the appropriate -e, the bulk of the
 time taken by PloidyPlot is in accumulating count statistics of het-mer pairs.  If the

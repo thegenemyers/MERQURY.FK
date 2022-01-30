@@ -17,9 +17,10 @@
 #include "libfastk.h"
 #include "hap_plotter.h"
 
-static char *Usage[] = { " [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>]",
-                         " <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] <asm1:dna> [<asm2:dna>] <out>"
-                       };
+static char *Usage[] =
+    { " [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>] [-P<dir(tmp)>]",
+      " <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] <asm1:dna> [<asm2:dna>] <out>"
+    };
 
 static char template[16] = "._HAP.XXXX";
 
@@ -54,6 +55,7 @@ int main(int argc, char *argv[])
   char  *PAT;
   char  *ASM[2];
   int    NTHREADS;
+  char  *SORT_PATH;
 
   { int    i, j, k;
     int    flags[128];
@@ -65,6 +67,7 @@ int main(int argc, char *argv[])
     YDIM = 4.5;
     PDF  = 0;
     NTHREADS = 4;
+    SORT_PATH = "\tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)
@@ -87,6 +90,9 @@ int main(int argc, char *argv[])
           case 'w':
             ARG_REAL(XDIM);
             break;
+          case 'P':
+            SORT_PATH = argv[i]+2;
+            break;
           case 'T':
             ARG_POSITIVE(NTHREADS,"Number of threads")
             break;
@@ -108,26 +114,26 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"      -v: verbose output to stderr\n");
 	fprintf(stderr,"      -T: number of threads to use\n");
+        fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         exit (1);
       }
-    else
-      { switch (argc)
-          { case 5:
-            if (VERBOSE)
-              fprintf(stderr,"\n Single diploid assembly\n");
-            ASM[0] = argv[3];
-            ASM[1] = NULL;
-            break;
-          case 6:
-            if (VERBOSE)
-              fprintf(stderr,"\n Two haploid assemblies\n");
-            ASM[0] = argv[3];
-            ASM[1] = argv[4];
-            break;
-          default:
-            ;
-        }
-      }
+
+    switch (argc)
+      { case 5:
+        if (VERBOSE)
+          fprintf(stderr,"\n Single diploid assembly\n");
+        ASM[0] = argv[3];
+        ASM[1] = NULL;
+        break;
+      case 6:
+        if (VERBOSE)
+          fprintf(stderr,"\n Two haploid assemblies\n");
+        ASM[0] = argv[3];
+        ASM[1] = argv[4];
+        break;
+      default:
+        ;
+    }
     MAT = argv[1];
     PAT = argv[2];
     OUT = argv[argc-1];
@@ -163,11 +169,13 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Computing k-table and profiles for assembly %s\n",ASM[i]);
 
-        sprintf(command,"FastK -k%d -T%d -p %s",KMER,NTHREADS,ASM[i]);
+        sprintf(command,"FastK -k%d -T%d -P%s -p %s",KMER,NTHREADS,SORT_PATH,ASM[i]);
         system(command);
-        sprintf(command,"FastK -k%d -T%d -p:%s.hap %s -N%s.%s",KMER,NTHREADS,MAT,ASM[i],ASM[i],MAT);
+        sprintf(command,"FastK -k%d -T%d -P%s -p:%s.hap %s -N%s.%s",
+                        KMER,NTHREADS,SORT_PATH,MAT,ASM[i],ASM[i],MAT);
         system(command);
-        sprintf(command,"FastK -k%d -T%d -p:%s.hap %s -N%s.%s",KMER,NTHREADS,PAT,ASM[i],ASM[i],PAT);
+        sprintf(command,"FastK -k%d -T%d -P%s -p:%s.hap %s -N%s.%s",
+                        KMER,NTHREADS,SORT_PATH,PAT,ASM[i],ASM[i],PAT);
         system(command);
       }
 

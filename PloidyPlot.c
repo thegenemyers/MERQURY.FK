@@ -36,7 +36,7 @@
 #include "smu_plot.R.h"
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
-                         " [-vk] [-lfs] [-pdf] [-T<int(4)>]",
+                         " [-vk] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]",
                          " [-o<output>] [-e<int(4)>] <source>[.ktab]"
                        };
 
@@ -1624,6 +1624,7 @@ int main(int argc, char *argv[])
   int64      **PLOT;
   int          bypass;
 
+  char  *SORT_PATH;
   int    KEEP;
   int    LINE, FILL, BOTH;
   int    PDF;
@@ -1646,6 +1647,7 @@ int main(int argc, char *argv[])
     OUT  = NULL;
     ETHRESH  = 4;
     NTHREADS = 4;
+    SORT_PATH = "/tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)
@@ -1677,6 +1679,9 @@ int main(int argc, char *argv[])
             break;
           case 'w':
             ARG_REAL(XDIM);
+            break;
+          case 'P':
+            SORT_PATH = argv[i]+2;
             break;
           case 'T':
             ARG_POSITIVE(NTHREADS,"Number of threads")
@@ -1725,6 +1730,7 @@ int main(int argc, char *argv[])
         fprintf(stderr,"      -v: verbose mode\n");
         fprintf(stderr,"      -k: keep het-mer table for re-use\n");
         fprintf(stderr,"      -T: number of threads to use\n");
+        fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         exit (1);
       }
 
@@ -1832,7 +1838,7 @@ int main(int argc, char *argv[])
             fflush(stderr);
           }
 
-        sprintf(command,"Symmex -T%d %s %s.symx",NTHREADS,tname,troot);
+        sprintf(command,"Symmex -T%d -P%s %s %s.symx",NTHREADS,SORT_PATH,tname,troot);
 
         if (system(command) != 0)
           { fprintf(stderr,"%s: Something went wrong with command:\n    %s\n",Prog_Name,command);
