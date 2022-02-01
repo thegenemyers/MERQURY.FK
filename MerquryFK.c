@@ -836,6 +836,7 @@ int main(int argc, char *argv[])
         system(command);
       
         cps = fopen(Catenate(OUT,"","",".completeness.stats"),"a");
+        fprintf(cps,"Assembly\tRegion\tFound\tTotal\t%% Covered\n");
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
@@ -895,7 +896,7 @@ int main(int argc, char *argv[])
         system(command);
       
         cps = fopen(Catenate(OUT,"","",".completeness.stats"),"a");
-        fprintf(cps,"Assembly\t%% Covered\n");
+        fprintf(cps,"Assembly\tRegion\tFound\tTotal\t%% Covered\n");
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
