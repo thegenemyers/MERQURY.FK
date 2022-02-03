@@ -582,7 +582,7 @@ int main(int argc, char *argv[])
 
     PDF      = 0;
     NTHREADS = 4;
-    SORT_PATH = "\tmp";
+    SORT_PATH = "/tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)

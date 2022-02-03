@@ -16,21 +16,21 @@
 
 ## Introduction
 
-The original **Merqury** is a collection of R and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
+The original **Merqury** is a collection of R, Java, and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
 **MerquryFK** replaces meryl with the **FastK** k-mer counter suite to considerably speed up analyses.
-Moreover, all the R and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  In addition, we have realized some analyses, KatComp and KatGC, that one finds
-only in the somewhat similary **KAT** k-mer suite developed at the Earlham Institute.
+Moreover, all the R, Java, and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  In addition, we have realized some analyses, **KatComp** and **KatGC**, that one finds
+only in the somewhat similar **KAT** k-mer suite developed at the Earlham Institute.
 Lastly, we include in this collection, **PloidyPlot** which is an improved version of the
 ploidy plotting tool SmudgePlots.
 
 There are some general conventions for our tools programmed for your convenience.
-First, suffix extensions need not be given for arguments of known type.  For example,
+First, suffix extensions need not be given for arguments of a known type.  For example,
 if an argument is a fasta or fastq with root name "foo" without extensions, then
 our commands will look for ```foo.fasta, foo.fa, foo.fastq, and foo.fq``` if you specify
 ```foo``` as the argument.  Second, option arguments (those that begin with a '-') can
-be in any order and in any position relaltive to the non-optional primary arguments (which must
+be in any order and in any position relative to the non-optional primary arguments (which must
 be given in the order specified).  We find this pretty convenient when for example you
-have typed out an entire CNplot command (1. below) but forgot that you wanted .pdf's.
+have typed out an entire CNplot command (2. below) but forgot that you wanted .pdf's.
 All you do is append -pdf to what you've already typed and then hit return.  So for example,
 ```CNplot -w4 -h3 Assembly -ls Reads -pdf``` is acceptable input.
 
@@ -74,6 +74,7 @@ reporting to the standard error.
 Given k-mer tables, produced by FastK, for an assembly, \<asm>,
 and a read data set, \<reads>, of the same genome, *CNplot* produces
 copy-number spectrum plots for the pair.
+The type of \<asm> is any dna file format accepted by [FastK](https://github.com/thegenemyers/FASTK).
 
 The width and height in inches of the plots are controlled by the -w and -h options and
 by default they are 6 x 4.5 inches.
@@ -98,8 +99,6 @@ broken down into those that are unique or those that are not.
 The -T option can be used to control the number of threads used, -v turns on verbose
 reporting to the standard error, and -P is passed through to the calls to FastK so you can
 specify the temp directory if needed.
-
-*Implement and describe -c ?*
 
 <br>
 
@@ -129,9 +128,9 @@ are not in asm1.  The legend is appropriately labeled.
 
 HAPplot has the relevant optional parameters of CNplot with the same meaning.
 It produces a haplotype blob plot of assembly \<asm1> and if present \<asm2> given 
-hap-mer tables \<mat>.hap.ktab, and \<pat>.hap.ktab produced earlier by HAPmaker.
+hap-mer tables \<mat>.hap.ktab, and \<pat>.hap.ktab produced earlier by [HAPmaker](#HAPmaker).
 Each assembly contig is plotted as a blob where its size is porportional
-to the contigs length in bases, and its position (x,y) where x = # of maternal hap-mers,
+to the contig's length in bases, and its' position (x,y) where x = # of maternal hap-mers,
 and y = # of paternal hap-mers, in the contig.
 
 <br>
@@ -145,7 +144,7 @@ and y = # of paternal hap-mers, in the contig.
 ```
 
 MerquryFK runs all the analyses performed by the original Merqury suite where it will
-run the trio analyses if hap-mer tables (produced by HAPmaker above) are supplied for the mother and father read data sets, and will assume a single unphased assembly if only \<asm1> is given, or two phased, haplotype assemblies if \<asm2> is also given.  The assemblies are assumed to be in a dna-sequence file format acceptable to FastK (i.e. fasta or fastq, compressed or not, and cram, bam, sam, or a Dazzler DB).
+run the trio analyses if hap-mer tables (produced by [HAPmaker](#HAPmaker) above) are supplied for the mother and father read data sets, and will assume a single unphased assembly if only \<asm1> is given, or two phased, haplotype assemblies if \<asm2> is also given.  The assemblies are assumed to be in a dna-sequence file format acceptable to [FastK](https://github.com/thegenemyers/FASTK) (i.e. fasta or fastq, compressed or not, and cram, bam, sam, or a Dazzler DB).
 
 The primary output argument -- \<out> -- is the root path name for all the output files
 produced by MerquryFK.  Specifically, it will produce the following where \<asm> is the name of an assembly file input:
@@ -164,19 +163,19 @@ produced by MerquryFK.  Specifically, it will produce the following where \<asm>
 
 * **\<out>.completeness.stats**: coverage of solid read k-mers by the assemblies and their union (if two are given).
 
-When running in trio mode it further outputs where \<hap> is either \<mat> or \<pat>:
+When run in trio mode it further outputs the following files where \<hap> is either \<mat> or \<pat>:
 
 * **\<out>.\<asm>.\<hap>.spectra-cn.(ln+fl+st).(pdf | png)***: cn-spectra plots of \<asm> versus \<hap>
 
-* **\<out>.hapmers.blob.(pdf | png)**: haplotype phased blob plot of the assemblies contigs colored by assembly
+* **\<out>.hapmers.blob.(pdf | png)**: haplotype phased blob plot of the assemblys' contigs colored by assembly
 
 * **\<out>.\<asm>.phased_block.bed**: putative phased intervals of an assembly determined with the hapmer tables.
 
-* **\<out>.\<asm>.phased_block.blob.(pdf | png)**: phased blob plot of the putative blocks colored by phase
+* **\<out>.\<asm>.phased_block.blob.(pdf | png)**: phased blob plot of an assembly with the putative blocks colored by phase
 
-* **\<out>.\<asm>.phased_block.stats**: short summary of block partitioning of \<asm>
+* **\<out>.\<asm>.phased_block.stats**: short summary of the block partitioning of \<asm>
 
-* **\<out>.\<asm>.block.N.(pdf | png)**: length histogram of phase-colored blocks of \<asm> in order of largest to smallest scaled to N x-axis.
+* **\<out>.\<asm>.block.N.(pdf | png)**: length histogram of the phase-colored blocks of \<asm> in order of largest to smallest scaled as a function of N# stat.
 
 * **\<out>.\<asm>.continuity.N.(pdf | png)**: N-plots of haplotype blocks and contigs and if present scaffolds.
 
@@ -220,7 +219,7 @@ Another difference with CNplot, is that the y-axis denotes the frequency of k-me
          <source>[.ktab] <out>
 ```
 
-Given a k-mer table, `<source>`, produced by FastK, *KatGC* produces a 3D heat map
+Given a k-mer table, `<source>` produced by FastK, *KatGC* produces a 3D heat map
 or contour map of the frequency of a k-mer versus its' GC content.
 The controlling options are almost identical to those of CNplot, save that
 (1) -z and -[yY] are not relevant, and (2) the meaning of the plot type options,
@@ -229,6 +228,8 @@ The controlling options are almost identical to those of CNplot, save that
 The -l option produces a contour **line** plot of count iso-lines.   The -f option produces
 a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
 **stacked** on top of it.
+
+Another difference with CNplot, is that the y-axis denotes the % GC content of k-mers, rather than the count of k-mers in the lone data set.
 
 <br>
 
@@ -259,8 +260,7 @@ is called again on the same input.
 Even if the input table is symmetric and trimmed to the appropriate -e, the bulk of the
 time taken by PloidyPlot is in accumulating count statistics of het-mer pairs.  If the
 -k option is given then the table of het-mer pair statistics is **k**ept, being stored
-in a file with
-the output root name and suffix **.smu**.  This saved table can then be used in a
+in a file named `<out>.smu`.  This saved table will then be used in
 subsequent calls to PloidyPlot, so that the counting step is avoided.   Each call of the program conservatively reminds you of this table (if present) and asks you if you want
 to use it and skip het-mer counting.  One must continue to
 specify the -k option or this ``short-cut'' table will be deleted on exit. 
