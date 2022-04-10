@@ -83,7 +83,6 @@ void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
   for (i = 0; i < nhist*(1+ZGRAM)-ZGRAM; i++)
     { sprintf(command,"%s.%d",troot,i);
       H[i] = Load_Histogram(command);
-      Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
     }
 
   //  If relative x- or y-max then must find peak x,y
@@ -92,16 +91,17 @@ void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
     { int64 sum, last;
       int64 ym, ymax;
       int   xm, xmax;   
+      int       xsec;
 
       ymax = xmax = -1;
       if (STACK)
         { int  low  = H[0]->low;
           int  high = H[0]->high;
 
-          last = 0;
+          last = 0;                     //  Find highest y away from origin
           for (i = 0; i < nhist; i++)
             last += H[i]->hist[low];
-          for (k = low+1; k < high; k++) 
+          for (k = low+1; k < high; k++)
             { sum = 0;
               for (i = 0; i < nhist; i++)
                 sum += H[i]->hist[k];
@@ -120,32 +120,89 @@ void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
                   xmax = k;
                 }
             }
-        }
-      if (FILL+LINE > 0)
-        for (i = 0; i < nhist; i++)
-          { int    low  = H[i]->low;
-            int    high = H[i]->high;
-            int64 *hist = H[i]->hist;
 
-            for (k = low+1; hist[k] < hist[k-1]; k++) 
-              if (k >= high)
-                break;
-            ym = hist[k];
-            xm = k;
-            for ( ; k < high; k++)
-              if (hist[k] >= ym)
-                { ym = hist[k];
-                  xm = k;
+          xsec = xmax;                 //  Find any seconday peak 10% of y-max
+          last = 0;
+          for (i = 0; i < nhist; i++)
+            last += H[i]->hist[xmax];
+          k = xmax+1;
+          sum = 0;
+          for (i = 0; i < nhist; i++)
+            sum += H[i]->hist[k];
+          while (k < high)
+            { while (sum <= last)
+                { if (k >= high)
+                    break;
+                  k += 1;
+                  last = sum;
+                  sum = 0;
+                  for (i = 0; i < nhist; i++)
+                    sum += H[i]->hist[k];
                 }
-            if (ym > ymax)
-              { ymax = ym;
-                xmax = xm;
-              }
-          }
-       if (XMAX == 0)
-         XMAX = xmax*XREL;
-       if (YMAX == 0)
-         YMAX = ymax*YREL;
+              while (sum >= last)
+                { if (k >= high)
+                    break;
+                  k += 1;
+                  last = sum;
+                  sum = 0;
+                  for (i = 0; i < nhist; i++)
+                    sum += H[i]->hist[k];
+                }
+              if (last >= .1*ymax)
+                xsec = k-1;
+            }
+        }
+
+      else //  FILL || LINE
+        { for (i = 0; i < nhist; i++)
+            { int    low  = H[i]->low;
+              int    high = H[i]->high;
+              int64 *hist = H[i]->hist;
+
+              for (k = low+1; hist[k] < hist[k-1]; k++)    //  Find largest y away from 0
+                if (k >= high)
+                  break;
+              ym = hist[k];
+              xm = k;
+              for ( ; k < high; k++)
+                if (hist[k] >= ym)
+                  { ym = hist[k];
+                    xm = k;
+                  }
+              if (ym > ymax)
+                { ymax = ym;
+                  xmax = xm;
+                }
+            }
+
+          xsec = xmax;                     //  Find highest y away from origin
+          for (i = 0; i < nhist; i++)
+            { int    high = H[i]->high;
+              int64 *hist = H[i]->hist;
+
+              k = xmax+1;
+              while (k < high)
+                { while (hist[k] <= hist[k-1])
+                    { if (k >= high)
+                        break;
+                      k += 1;
+                    }
+                  while (hist[k] >= hist[k-1])
+                    { if (k >= high)
+                        break;
+                      k += 1;
+                    }
+                  if (hist[k-1] >= .1*ymax)
+                    xsec = k-1;
+                }
+            }
+        }
+
+      if (XMAX == 0)
+        XMAX = ((xmax+xsec)*XREL)/2;
+      if (YMAX == 0)
+        YMAX = ymax*YREL;
+
 #ifdef DEBUG
        printf("x,y-peak = %d, %lld\n",xmax,ymax);
 fflush(stdout);

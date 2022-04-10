@@ -21,7 +21,7 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(tmp)>]",
+                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
                          " <reads>[.ktab] <asm1dna> [<asm2:.dna>] <out>"
                        };
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("lfsz")
+            ARG_FLAGS("vlfsz")
             break;
           case 'h':
             ARG_REAL(YDIM);

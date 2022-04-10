@@ -75,14 +75,14 @@ int main(int argc, char *argv[])
     YMAX = 0;
     PDF  = 0;
     NTHREADS = 4;
-    SORT_PATH = "\tmp";
+    SORT_PATH = "/tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("lfsz")
+            ARG_FLAGS("vlfsz")
             break;
           case 'h':
             ARG_REAL(YDIM);

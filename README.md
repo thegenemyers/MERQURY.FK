@@ -53,7 +53,7 @@ times in the underlying data set are in the table.
 Prior to running either HAPplot or MerquryFK in trio mode, one must produce a table
 of the **hap-mers** for both the mother and father given FastK k-mer tables of the
 maternal, paternal, and child sequence data sets.
-These k-mers are those in the given parent that are specific to that parent, inherited
+The hap-mer k-mers are those in the given parent that are specific to that parent, inherited
 by the child, and reliable in that they are unlikely to be error k-mers.
 The names of the resulting k-mer tables produced are \<mat>.hap.ktab and \<pat>.hap.ktab.
 
@@ -90,8 +90,7 @@ CNplot can produce any of a line plot, a filled plot, or a so-called stacked plo
 but one can request .pdf's with the -pdf option.
 
 The root path name for the output plots is given by the final \<out> argument.  A suffix of .ln, .fl, or .st is added for the line, fill, and stack plots, respectively, followed
-by either .png or .pdf.  If the -o option is not set, then the root path name is that of
-the \<asm> argument.
+by either .png or .pdf.
 
 If the -z option is set, then CNplot plots at 0, the # of k-mers in \<asm> - \<reads>
 broken down into those that are unique or those that are not.
@@ -130,7 +129,7 @@ HAPplot has the relevant optional parameters of CNplot with the same meaning.
 It produces a haplotype blob plot of assembly \<asm1> and if present \<asm2> given 
 hap-mer tables \<mat>.hap.ktab, and \<pat>.hap.ktab produced earlier by [HAPmaker](#HAPmaker).
 Each assembly contig is plotted as a blob where its size is porportional
-to the contig's length in bases, and its' position (x,y) where x = # of maternal hap-mers,
+to the contig's length in bases, and its' position is (x,y) where x = # of maternal hap-mers,
 and y = # of paternal hap-mers, in the contig.
 
 <br>
@@ -147,7 +146,8 @@ MerquryFK runs all the analyses performed by the original Merqury suite where it
 run the trio analyses if hap-mer tables (produced by [HAPmaker](#HAPmaker) above) are supplied for the mother and father read data sets, and will assume a single unphased assembly if only \<asm1> is given, or two phased, haplotype assemblies if \<asm2> is also given.  The assemblies are assumed to be in a dna-sequence file format acceptable to [FastK](https://github.com/thegenemyers/FASTK) (i.e. fasta or fastq, compressed or not, and cram, bam, sam, or a Dazzler DB).
 
 The primary output argument -- \<out> -- is the root path name for all the output files
-produced by MerquryFK.  Specifically, it will produce the following where \<asm> is the name of an assembly file input:
+produced by MerquryFK.  Specifically, it will produce the following where \<asm> is the
+root name of an assembly file input:
 
 * **\<out>.\<asm>.spectra-cn.(ln+fl+st).(pdf | png)**: cn-spectra plots of \<asm> versus \<reads>
 
@@ -245,12 +245,12 @@ This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudg
 that produces "cleaner" smudges by avoiding false het-mer signals.  In addition to displaying smudges the program tries to estimate the ploidy of the genome albeit this
 is not guaranteed to always be correct.
 
-Almost all the options (-w, -h, -v, -lfs, -pdf, -o, -T) control the output file name and type, display, and number of threads used exactly as described for [CNplot](#CNplot).
+Almost all the options (-w, -h, -v, -lfs, -pdf, -T) control the output file name and type, display, and number of threads used exactly as described for [CNplot](#CNplot).
 
 Any k-mer with a count of less than -e in the input FastK table \<source> is considered
-an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table that is trimmed to threshold -e.  If the supplied table does not meet these specification,
+an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table that is trimmed to threshold -e.  If the supplied table does not meet these specifications,
 then the program takes additional compute time to make it so, but if in a preprocessing
-step you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
+step, you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
 requirements than this time is saved.  If PloidyPlot is forced to make a trimmed, symmetric table for an input,
 say `<A>`, then
 the call to Symmex will use the temp directory specified by the -P option (if not the default "/tmp") and it

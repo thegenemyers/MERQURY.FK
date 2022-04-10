@@ -42,7 +42,7 @@ static int ANCHOR_LENGTH  = 20000;
 
   //  Usage
 
-static char *Usage[3] = { " [-v] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(tmp)>]",
+static char *Usage[3] = { " [-v] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]",
                           " <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]",
                           " <asm1:dna> [<asm2:dna>] <out>"
                         };
