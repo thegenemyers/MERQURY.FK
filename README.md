@@ -73,10 +73,9 @@ reporting to the standard error.
 
 Given a k-mer table, produced by FastK, for
 a read data set, \<reads>,
-and an assembly, \<asm>, of the same genome in a sequence format accepted
-by FastK (e.g. .fasta, .cram, ...), *CNplot* produces
+and an assembly, \<asm>, of the same genome, *CNplot* produces
 copy-number spectrum plots for the pair.
-The type of \<asm> is any dna file format accepted by [FastK](https://github.com/thegenemyers/FASTK).
+The type 'dna' of \<asm> is any dna file format accepted by [FastK](https://github.com/thegenemyers/FASTK) (e.g. .fasta, .cram, .fa.gz, ...)
 
 The width and height in inches of the plots are controlled by the -w and -h options and
 by default they are 6 x 4.5 inches.
