@@ -16,12 +16,12 @@
 
 ## Introduction
 
-The original **Merqury** is a collection of R, Java, and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
+The original [Merqury](https://github.com/marbl/merqury) is a collection of R, Java, and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
 **MerquryFK** replaces meryl with the **FastK** k-mer counter suite to considerably speed up analyses.
 Moreover, all the R, Java, and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  In addition, we have realized some analyses, **KatComp** and **KatGC**, that one finds
-only in the somewhat similar **KAT** k-mer suite developed at the Earlham Institute.
+only in the somewhat similar [KAT](https://github.com/TGAC/KAT) k-mer suite developed at the Earlham Institute.
 Lastly, we include in this collection, **PloidyPlot** which is an improved version of the
-ploidy plotting tool SmudgePlots.
+ploidy plotting tool [SmudgePlot](https://github.com/KamilSJaron/smudgeplot).
 
 There are some general conventions for our tools programmed for your convenience.
 First, suffix extensions need not be given for arguments of a known type.  For example,
@@ -39,7 +39,7 @@ to describe it on the command line indicating that the .ktab extension is option
 per the convention above.  Regardless of whether the extension is given, it is expected
 that the associated histogram file \<name>.hist is also present (this file is always
 produced by a run of FastK that produces a k-mer table).  Also note carefully that these
-tables must be produced with the option -t1 set so that all k-mers that occur 1 or more
+tables must be produced with the option -t or -t1 set so that all k-mers that occur 1 or more
 times in the underlying data set are in the table.
 
 <br>
@@ -71,8 +71,10 @@ reporting to the standard error.
           <reads>[.ktab] <asm:dna> <out>
 ```
 
-Given k-mer tables, produced by FastK, for an assembly, \<asm>,
-and a read data set, \<reads>, of the same genome, *CNplot* produces
+Given a k-mer table, produced by FastK, for
+a read data set, \<reads>,
+and an assembly, \<asm>, of the same genome in a sequence format accepted
+by FastK (e.g. .fasta, .cram, ...), *CNplot* produces
 copy-number spectrum plots for the pair.
 The type of \<asm> is any dna file format accepted by [FastK](https://github.com/thegenemyers/FASTK).
 
