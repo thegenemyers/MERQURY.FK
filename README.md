@@ -205,7 +205,7 @@ spectra.  The controlling options are almost identical to those of CNplot, save 
 -l, -f, and -s -- are as follows:
 
 The -l option produces a contour **line** plot of count iso-lines.   The -f option produces
-a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
+a **filled** heat map of the counts.  The -s option produces a heat map with a contour plot
 **stacked** on top of it.
 
 Another difference with CNplot, is that the y-axis denotes the frequency of k-mers in the second data set, rather than the count of k-mers in the lone data set.
@@ -227,7 +227,7 @@ The controlling options are almost identical to those of CNplot, save that
 -l, -f, and -s -- are as follows:
 
 The -l option produces a contour **line** plot of count iso-lines.   The -f option produces
-a **filled** heat map of the counts.  The -s option produces a heap map with a contour plot
+a **filled** heat map of the counts.  The -s option produces a heat map with a contour plot
 **stacked** on top of it.
 
 Another difference with CNplot, is that the y-axis denotes the % GC content of k-mers, rather than the count of k-mers in the lone data set.
