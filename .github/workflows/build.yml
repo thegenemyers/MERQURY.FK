@@ -1,0 +1,17 @@
+name: build
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    env:
+      MERQURY_FK_DEST_DIR: /tmp/bin
+    steps:
+      - uses: actions/checkout@v2
+      - run: gcc --version
+      - run: make
+      - run: mkdir -p "${MERQURY_FK_DEST_DIR}"
+      - run: make install DEST_DIR="${MERQURY_FK_DEST_DIR}"
