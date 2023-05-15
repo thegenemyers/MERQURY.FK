@@ -22,19 +22,6 @@
 #include "hap_plotter.h"
 #include "blk_plot.R.h"
 
-  //  Plotting constants
-
-#define PLOTW  6.0    //  Plot width & height (in inches)
-#define PLOTH  4.5
-
-#define PLOTx  2.1    //  Peak relative x,y scale
-#define PLOTy  1.1
-
-#define PLOTX    0    //  0 => use relative x,y above
-#define PLOTY    0
-
-#define ZOPTION  1    //  0 if do not want -z
-
   //  Phase Block parameters
 
 static int ANCHOR_MARK    = 5;
@@ -42,7 +29,9 @@ static int ANCHOR_LENGTH  = 20000;
 
   //  Usage
 
-static char *Usage[3] = { " [-v] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]",
+static char *Usage[5] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
+                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
+                          " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
                           " <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]",
                           " <asm1:dna> [<asm2:dna>] <out>"
                         };
@@ -564,6 +553,11 @@ int main(int argc, char *argv[])
 { char  *READS, *ASM[2], *MAT, *PAT, *OUT;
   int    LINE, FILL, STACK;
   int    PDF;
+  int    ZGRAM;
+  double XDIM, YDIM;
+  double XREL, YREL;
+  int    XMAX;
+  int64  YMAX;
   int    NTHREADS;
   char  *SORT_PATH;
 
@@ -580,7 +574,13 @@ int main(int argc, char *argv[])
 
     ARG_INIT("MerquryFK");
 
-    PDF      = 0;
+    XDIM = 6.0;    //  Plot width & height (in inches)
+    YDIM = 4.5;
+    XREL = 2.1;    //  Peak relative x,y scale
+    YREL = 1.1;
+    XMAX = 0;      //  0 => use relative x,y above
+    YMAX = 0;
+    PDF  = 0;
     NTHREADS = 4;
     SORT_PATH = "/tmp";
 
@@ -589,7 +589,10 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("vlfs")
+            ARG_FLAGS("vlfsz")
+            break;
+          case 'h':
+            ARG_REAL(YDIM);
             break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
@@ -599,12 +602,39 @@ int main(int argc, char *argv[])
                 exit (1);
               }
             break;
+          case 'w':
+            ARG_REAL(XDIM);
+            break;
+          case 'x':
+            ARG_REAL(XREL);
+            if (XREL <= 0.)
+              { fprintf(stderr,"%s: max x scaling factor must be > 0\n",Prog_Name);
+                exit (1);
+              }
+            break;
+          case 'y':
+            ARG_REAL(YREL);
+            if (YREL <= 0.)
+              { fprintf(stderr,"%s: max y scaling factor must be > 0\n",Prog_Name);
+                exit (1);
+              }
+            break;
           case 'P':
             SORT_PATH = argv[i]+2;
             break;
           case 'T':
-            ARG_POSITIVE(NTHREADS,"Number of threads")
+	    ARG_POSITIVE(NTHREADS,"Number of threads")
             break;
+          case 'X':
+            ARG_POSITIVE(XMAX,"x max");
+            break;
+          case 'Y':
+            { int ymax;
+
+              ARG_POSITIVE(ymax,"y max");
+              YMAX = ymax;
+              break;
+            }
         }
       else
         argv[j++] = argv[i];
@@ -614,22 +644,36 @@ int main(int argc, char *argv[])
     LINE    = flags['l'];
     FILL    = flags['f'];
     STACK   = flags['s'];
+    ZGRAM   = flags['z'];
 
     if (argc < 4 || argc > 7)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
-        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
+	fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[3]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[4]);
         fprintf(stderr,"\n");
-        fprintf(stderr,"      -v: verbose output to stderr\n");
-        fprintf(stderr,"      -T: number of threads to use\n");
-        fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
+        fprintf(stderr,"      -w: width in inches of plots\n");
+        fprintf(stderr,"      -h: height in inches of plots\n");
+        fprintf(stderr,"      -x: max x as a real-valued multiple of x* with max\n");
+        fprintf(stderr,"              count 'peak' away from the origin\n");
+        fprintf(stderr,"      -X: max x as an int value in absolute terms\n");
+        fprintf(stderr,"      -y: max y as a real-valued multiple of max count\n");
+        fprintf(stderr,"              'peak' away from the origin\n");
+        fprintf(stderr,"      -Y: max y as an int value in absolute terms\n");
         fprintf(stderr,"\n");
         fprintf(stderr,"      -l: draw line plot\n");
         fprintf(stderr,"      -f: draw fill plot\n");
         fprintf(stderr,"      -s: draw stack plot\n");
         fprintf(stderr,"          any combo allowed, none => draw all\n");
         fprintf(stderr,"\n");
+        fprintf(stderr,"      -z: plot counts of k-mers unique to assembly\n");
+        fprintf(stderr,"\n");
         fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
+        fprintf(stderr,"\n");
+        fprintf(stderr,"      -v: verbose output to stderr\n");
+        fprintf(stderr,"      -T: number of threads to use\n");
+        fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         exit (1);
       }
 
@@ -790,7 +834,7 @@ int main(int argc, char *argv[])
 
           sprintf(Out,"%s.%s.spectra-cn",OUT,A);
           cn_plot(Out,A,READS,
-                  PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                  XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                   LINE,FILL,STACK,troot,NTHREADS);
 
           //  Compute scaffold QV's and make bed file
@@ -857,7 +901,7 @@ int main(int argc, char *argv[])
         sprintf(Out,"%s.spectra-asm",OUT);
 
         asm_plot(Out,ASM[0],NULL,READS,
-                 PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                 XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                  LINE,FILL,STACK,troot,NTHREADS);
       }
 
@@ -881,7 +925,7 @@ int main(int argc, char *argv[])
         sprintf(A1uA2,"%s.U",troot);
 
         cn_plot(Out,A1uA2,READS,
-                PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                 LINE,FILL,STACK,troot,NTHREADS);
 
         //  Compute & output completeness stats
@@ -931,7 +975,7 @@ int main(int argc, char *argv[])
         sprintf(Out,"%s.spectra-asm",OUT);
 
         asm_plot(Out,ASM[0],ASM[1],READS,
-                 PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                 XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                  LINE,FILL,STACK,troot,NTHREADS);
       } 
   }
@@ -962,7 +1006,7 @@ int main(int argc, char *argv[])
 
         sprintf(Out,"%s.%s.%s.spectra-cn",OUT,A,MAT);
         cn_plot(Out,A,MAT,
-                PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                 LINE,FILL,STACK,troot,NTHREADS);
 
         if (VERBOSE)
@@ -970,7 +1014,7 @@ int main(int argc, char *argv[])
 
         sprintf(Out,"%s.%s.%s.spectra-cn",OUT,A,PAT);
         cn_plot(Out,A,PAT,
-                PLOTW,PLOTH,PLOTx,PLOTy,PLOTX,PLOTY,PDF,ZOPTION,
+                XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                 LINE,FILL,STACK,troot,NTHREADS);
 
         if (VERBOSE)
@@ -1046,7 +1090,7 @@ int main(int argc, char *argv[])
           fprintf(stderr,"\n Producing phased blob plot of the imputed blocks of assembly %s\n",A);
 
         sprintf(Out,"%s.%s.phased_block.blob",OUT,A);
-        hap_plot(Out,MAT,PAT,ASM,PLOTW,PLOTH,PDF,troot);
+        hap_plot(Out,MAT,PAT,ASM,XDIM,YDIM,PDF,troot);
 
         if (VERBOSE)
           fprintf(stderr,"\n Sorting phase block and assembly sizes for %s\n",A);
@@ -1070,7 +1114,7 @@ int main(int argc, char *argv[])
         if (do_scaffs)
           sprintf(command+strlen(command)," -s %s.scaff.sizes",troot);
         sprintf(command+strlen(command)," -o %s.%s%s -x %g -y %g 2>/dev/null",
-                                        OUT,A,PDF?" -p":" ",PLOTW,PLOTH);
+                                        OUT,A,PDF?" -p":" ",XDIM,YDIM);
         system(command);
 
         sprintf(command,"rm %s.scf.un %s.scaff.sizes",troot,troot);
@@ -1096,7 +1140,7 @@ int main(int argc, char *argv[])
       }
 
     sprintf(Out,"%s.hapmers.blob",OUT);
-    hap_plot(Out,MAT,PAT,ASM,PLOTW,PLOTH,PDF,troot);
+    hap_plot(Out,MAT,PAT,ASM,XDIM,YDIM,PDF,troot);
   }
 
 clean_up:

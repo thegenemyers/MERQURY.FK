@@ -138,13 +138,19 @@ and y = # of paternal hap-mers, in the contig.
 <a name="MerquryFK"></a>
 
 ```
-5. MerquryFK [-v] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
+5. MerquryFK [-w<double(6.0)>] [-h<double(4.5)>]
+             [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
+             [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
                 <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]
                 <asm1:dna> [<asm2:dna>] <out>
 ```
 
 MerquryFK runs all the analyses performed by the original Merqury suite where it will
 run the trio analyses if hap-mer tables (produced by [HAPmaker](#HAPmaker) above) are supplied for the mother and father read data sets, and will assume a single unphased assembly if only \<asm1> is given, or two phased, haplotype assemblies if \<asm2> is also given.  The assemblies are assumed to be in a dna-sequence file format acceptable to [FastK](https://github.com/thegenemyers/FASTK) (i.e. fasta or fastq, compressed or not, and cram, bam, sam, or a Dazzler DB).
+
+The options on the first 3 lines of the command description are the same as for CNplot
+and have the same interpretation.  Any sub-calls to CNplot, ASMplot, and HAPplot will use
+the option setting if not the defaults.
 
 The primary output argument -- \<out> -- is the root path name for all the output files
 produced by MerquryFK.  Specifically, it will produce the following where \<asm> is the
@@ -179,14 +185,6 @@ When run in trio mode it further outputs the following files where \<hap> is eit
 * **\<out>.\<asm>.block.N.(pdf | png)**: length histogram of the phase-colored blocks of \<asm> in order of largest to smallest scaled as a function of N# stat.
 
 * **\<out>.\<asm>.continuity.N.(pdf | png)**: N-plots of haplotype blocks and contigs and if present scaffolds.
-
-One can select verbose output with -v, .pdf plots versus .png's with -pdf, and which
-type of plots -- line, fill, or stacked -- with a combination of the flags -lfs.
-If no plot types are set, then all 3 are produced.  Finally, the -T option controls
-the number of threads used in those bits of MerquryFK that are threaded, and the -P option
-is passed through to the calls to FastK so you can specify the temp directory if needed.
-
-MerquryFK uses the default dimensions and scaling parameters of CNplot, ASMplot, and HAPplot when producing plots and always with the -z option set.  These settings can be reset by redefining an easily identifiable set of defined constants at the top of the code file MerquryFK.c
 
 <br>
 

@@ -124,9 +124,9 @@ int main(int argc, char *argv[])
           case 'Y':
             { int ymax;
 
-               ARG_POSITIVE(ymax,"y max");
-               YMAX = ymax;
-               break;
+              ARG_POSITIVE(ymax,"y max");
+              YMAX = ymax;
+              break;
             }
         }
       else
