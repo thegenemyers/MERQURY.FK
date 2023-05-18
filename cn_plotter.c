@@ -198,7 +198,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
                       if (mass > sum)
                         break;
                     }
-                  if (k > xsec && ymax > .01*ymax)
+                  if (k > xsec && ymax > .01*YMAX)
                     xsec = k;
                 }
             }
