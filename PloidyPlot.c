@@ -2061,6 +2061,8 @@ skip_build:
       fclose(f);
     }
 
+#ifndef KAMIL
+
   //  Create smudge table
 
   { int    i, j, a;
@@ -2322,6 +2324,8 @@ skip_build:
         fprintf(stderr,"\n");
       }
   }
+
+#endif
 
   free(OUT);
 

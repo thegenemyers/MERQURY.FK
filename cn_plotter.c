@@ -16,6 +16,8 @@
 
 #undef DEBUG
 
+#define MASS  .98   //  Must adjust x axis so see 98% of the mass of every curve
+
 #include "libfastk.h"
 
 #include "cn_plot.R.h"
@@ -62,7 +64,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
   //  If relative x- or y-max then must find peak x,y
 
   if (XMAX == 0 || YMAX == 0)
-    { int64 sum, last;
+    { int64 sum, last, mass;
       int64 ym, ymax;
       int   xm, xmax;   
       int       xsec;
@@ -171,10 +173,60 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
             }
         }
 
-      if (XMAX == 0)
-        XMAX = ((xmax+xsec)*XREL)/2;
       if (YMAX == 0)
         YMAX = ymax*YREL;
+      if (XMAX == 0)
+        { XMAX = ((xmax+xsec)*XREL)/2;
+          if (FILL || LINE)               //  Make sure 98% of the mass of each plot is seen
+            { xsec = 0;
+              for (i = 0; i <= 5; i++)
+                { int    low  = H[i]->low;
+                  int    high = H[i]->high;
+                  int64 *hist = H[i]->hist;
+
+                  sum  = 0;
+                  ymax = 0;
+                  for (k = low; k < high; k++)
+                    { if (hist[k] > ymax)
+                        ymax = hist[k];
+                      sum += hist[k];
+                    }
+                  sum *= MASS;
+                  mass = 0;
+                  for (k = low; k < high; k++)
+                    { mass += hist[k];
+                      if (mass > sum)
+                        break;
+                    }
+                  if (k > xsec && ymax > .01*ymax)
+                    xsec = k;
+                }
+            }
+          else
+            { int    low  = H[0]->low;
+              int    high = H[0]->high;
+
+              xsec = 0;
+              sum  = 0;
+              for (i = 0; i <= 5; i++)
+                { int64 *hist = H[i]->hist;
+                   for (k = low; k < high; k++)
+                     sum += hist[k++];
+                }
+              sum *= MASS;
+              mass = 0;
+              for (k = low; k < high; k++)
+                { for (i = 0; i <= 5; i++)
+                    mass += H[i]->hist[k];
+                  if (mass > sum)
+                    break;
+                }
+              if (k > xsec && ymax > .01*ymax)
+                xsec = k;
+            }
+          if (xsec > XMAX)
+            XMAX = xsec;
+        }
 
 #ifdef DEBUG
        printf("x,y-peak = %d, %lld\n",xmax,ymax);
