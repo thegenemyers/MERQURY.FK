@@ -51,9 +51,9 @@ int main(int argc, char *argv[])
   int    VERBOSE;
   double XDIM, YDIM;
   char  *OUT;
-  char  *MAT;
-  char  *PAT;
-  char  *ASM[2];
+  char  *MAT, *MROOT;
+  char  *PAT, *PROOT;
+  char  *ASM[2], *AROOT[2];
   int    NTHREADS;
   char  *SORT_PATH;
 
@@ -141,17 +141,21 @@ int main(int argc, char *argv[])
 
   { char *troot, *x;
     int   i, j, len;
-    char *suffix[9] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db", ".sam", ".bam", ".cram" };
+    char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
+                         ".dam", ".sam", ".bam", ".cram" };
     char  command[5000];
 
     troot = mktemp(template);
 
-    x = Root(MAT,".ktab");
-    MAT = Root(x,".hap");
+    x = PathnRoot(MAT,".ktab");
+    MAT = PathnRoot(x,".hap");
     free(x);
-    x = Root(PAT,".ktab");
-    PAT = Root(x,".hap");
+    x = PathnRoot(PAT,".ktab");
+    PAT = PathnRoot(x,".hap");
     free(x);
+
+    MROOT = Root(MAT,"");
+    PROOT = Root(PAT,"");
 
     KMER = check_table(Catenate(MAT,".hap",".ktab",""),0);
     KMER = check_table(Catenate(PAT,".hap",".ktab",""),KMER);
@@ -160,11 +164,12 @@ int main(int argc, char *argv[])
       { if (ASM[i] == NULL)
           continue;
 
-        for (j = 0; j < 9; j++)
+        for (j = 0; j < 10; j++)
           { len = strlen(ASM[i]) - strlen(suffix[j]);
             if (strcmp(ASM[i]+len,suffix[j]) == 0)
               ASM[i][len] = '\0';
           }
+        AROOT[i] = Root(ASM[i],"");
 
         if (VERBOSE)
           fprintf(stderr,"\n Computing k-table and profiles for assembly %s\n",ASM[i]);
@@ -172,10 +177,10 @@ int main(int argc, char *argv[])
         sprintf(command,"FastK -k%d -T%d -P%s -p %s",KMER,NTHREADS,SORT_PATH,ASM[i]);
         system(command);
         sprintf(command,"FastK -k%d -T%d -P%s -p:%s.hap %s -N%s.%s",
-                        KMER,NTHREADS,SORT_PATH,MAT,ASM[i],ASM[i],MAT);
+                        KMER,NTHREADS,SORT_PATH,MAT,ASM[i],AROOT[i],MROOT);
         system(command);
         sprintf(command,"FastK -k%d -T%d -P%s -p:%s.hap %s -N%s.%s",
-                        KMER,NTHREADS,SORT_PATH,PAT,ASM[i],ASM[i],PAT);
+                        KMER,NTHREADS,SORT_PATH,PAT,ASM[i],AROOT[i],PROOT);
         system(command);
       }
 
@@ -187,10 +192,13 @@ int main(int argc, char *argv[])
     for (i = 0; i < 2; i++)
       { if (ASM[i] == NULL)
           continue;
-        sprintf(command,"Fastrm %s %s.%s %s.%s",ASM[i],ASM[i],MAT,ASM[i],PAT);
+        sprintf(command,"Fastrm %s %s.%s %s.%s",ASM[i],AROOT[i],MROOT,AROOT[i],PROOT);
         system(command);
+        free(AROOT[i]);
       }
 
+    free(PROOT);
+    free(MROOT);
     free(PAT);
     free(MAT);
   }

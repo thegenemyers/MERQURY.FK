@@ -18,8 +18,9 @@
 #include <math.h>
 #include <pthread.h>
 
+#undef  KAMIL
+
 #undef  SOLO_CHECK
-#undef  TABLE_TEST
 
 #undef  DEBUG_GENERAL
 #undef  DEBUG_RECURSION
@@ -2053,6 +2054,28 @@ int main(int argc, char *argv[])
 
 skip_build:
 
+#ifdef KAMIL
+
+  if (KEEP && !bypass)
+    { FILE  *f;
+      int    a, i;
+
+      f = fopen(Catenate(OUT,".smu","",""),"w");
+      fprintf(f,
+         "// %dx%d matrix, the i'th number in the j'th row give the number of hetmer pairs (a,b)",
+         SMAX,FMAX);
+      fprintf(f,
+         "//                     s.t. count(a)+count(b) = j+1 and min(count(a),count(b)) = i+1.");
+      for (a = 0; a <= SMAX; a++)
+        { for (i = 0; i < FMAX; i++)
+            fprintf(f," %lld",PLOT[a][i]);
+          fprintf(f,"\n");
+        }
+      fclose(f);
+    }
+
+#else
+
   if (KEEP && !bypass)
     { FILE  *f;
 
@@ -2060,8 +2083,6 @@ skip_build:
       fwrite(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
       fclose(f);
     }
-
-#ifndef KAMIL
 
   //  Create smudge table
 
@@ -2325,7 +2346,7 @@ skip_build:
       }
   }
 
-#endif
+#endif  //  KAMIL
 
   free(OUT);
 

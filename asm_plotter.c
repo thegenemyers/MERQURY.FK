@@ -14,6 +14,9 @@
 #include <dirent.h>
 #include <math.h>
 
+#undef  KAMIL   //  if set then instead of plots output R-script tables as OUT.asmi and
+                //      if -z is sent then OUT.asmz
+
 #undef DEBUG
 
 #include "libfastk.h"
@@ -57,8 +60,8 @@ void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
         sprintf(extra,"");
       sprintf(command,"Logex -T%d -H1000 %s%s %s %s",NTHREADS,what,extra,ASM1,READS);
       nhist = 2;
-      Label[1] = Root(ASM1,".ktab");
-      Label[2] = Root(ASM1,".ktab");
+      Label[1] = Root(ASM1,"");
+      Label[2] = Root(ASM1,"");
     }
   else
     { sprintf(what,"'%s.0=C-#(A|B)' '%s.1=C&.(A-B)' '%s.2=C&.(B-A)' '%s.3=C&.#(A&B)'",
@@ -68,8 +71,8 @@ void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
       else
         sprintf(extra,"");
       sprintf(command,"Logex -T%d -H1000 %s%s %s %s %s",NTHREADS,what,extra,ASM1,ASM2,READS);
-      Label[1] = Root(ASM1,".ktab");
-      Label[2] = Root(ASM2,".ktab");
+      Label[1] = Root(ASM1,"");
+      Label[2] = Root(ASM2,"");
       nhist = 4;
     }
 #ifdef DEBUG
@@ -222,6 +225,7 @@ fflush(stdout);
     printf("Writing %s\n",Catenate(troot,".asmi","",""));
   fflush(stdout);
 #endif
+
   fprintf(f,"Copies\tkmer_multiplicity\tCount\n");
   for (i = 0; i < nhist; i++)
     { int    low  = H[i]->low;
@@ -254,12 +258,12 @@ fflush(stdout);
 #endif
 
       if (nhist == 4)
-        { fprintf(f,"%s-only\t0\t%lld\n",ASM1,GetCount(H[nhist]));
-          fprintf(f,"%s-only\t0\t%lld\n",ASM2,GetCount(H[nhist+1]));
+        { fprintf(f,"%s-only\t0\t%lld\n",Label[1],GetCount(H[nhist]));
+          fprintf(f,"%s-only\t0\t%lld\n",Label[2],GetCount(H[nhist+1]));
           fprintf(f,"shared\t0\t%lld\n",GetCount(H[nhist+2]));
         }
       else
-        fprintf(f,"%s\t0\t%lld\n",ASM1,GetCount(H[nhist]));
+        fprintf(f,"%s\t0\t%lld\n",Label[1],GetCount(H[nhist]));
       fclose(f);
     }
 
@@ -268,6 +272,19 @@ fflush(stdout);
 
   free(Label[1]);
   free(Label[2]);
+
+#ifdef KAMIL
+
+  (void) XDIM; (void) YDIM; (void) PDF; (void) LINE; (void) FILL;
+
+  sprintf(command,"mv %s.asmi %s.asmi",troot,OUT);
+  system(command);
+  if (ZGRAM)
+    { sprintf(command,"mv %s.asmz %s.asmz",troot,OUT);
+      system(command);
+    }
+
+#else
 
   //  Generate the R plot script
 
@@ -317,4 +334,7 @@ fflush(stdout);
 
   sprintf(command,"rm -f %s.asmi %s.asmz %s.R",troot,troot,troot);
   system(command);
+
+#endif // KAMIL
+
 }

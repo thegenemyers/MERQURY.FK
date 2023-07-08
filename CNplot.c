@@ -177,14 +177,15 @@ int main(int argc, char *argv[])
     OUT   = argv[3];
   }
 
-  { char *suffix[9] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db", ".sam", ".bam", ".cram" };
+  { char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
+                         ".dam", ".sam", ".bam", ".cram" };
     int   j, len;
 
-    READS = Root(READS,".ktab");
+    READS = PathnRoot(READS,".ktab");
 
     KMER = check_table(Catenate(READS,".ktab","",""),0);
 
-    for (j = 0; j < 9; j++)
+    for (j = 0; j < 10; j++)
       { len = strlen(ASM) - strlen(suffix[j]);
         if (strcmp(ASM+len,suffix[j]) == 0)
           ASM[len] = '\0';

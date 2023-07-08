@@ -106,6 +106,27 @@ char *Root(char *name, char *suffix)
   return (path);
 }
 
+char *PathnRoot(char *name, char *suffix)
+{ char *path, *dot;
+  int   epos;
+
+  if (name == NULL)
+    return (NULL);
+  if (suffix == NULL)
+    { dot = strrchr(name,'.');
+      path = Strndup(name,dot-name,"Extracting root from");
+    }
+  else
+    { epos  = strlen(name);
+      epos -= strlen(suffix);
+      if (epos > 0 && strcasecmp(name+epos,suffix) == 0)
+        path = Strndup(name,epos,"Extracting root from");
+      else
+        path = Strdup(name,"Allocating root");
+    }
+  return (path);
+}
+
 char *Catenate(char *path, char *sep, char *root, char *suffix)
 { static char *cat = NULL;
   static int   max = -1;

@@ -113,9 +113,9 @@ int main(int argc, char *argv[])
       }
   }
 
-  MAT = Root(argv[1],".ktab");
-  PAT = Root(argv[2],".ktab");
-  CHILD = Root(argv[3],".ktab");
+  MAT = PathnRoot(argv[1],".ktab");
+  PAT = PathnRoot(argv[2],".ktab");
+  CHILD = PathnRoot(argv[3],".ktab");
 
   { char  command[5000];
 

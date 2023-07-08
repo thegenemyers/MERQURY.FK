@@ -75,6 +75,7 @@ static int64 SOLID_COUNT;
 static int64 *scan_asm(char *asmb, char *reads, char *out)
 { static int64 summary[2];
 
+  char          *aroot;
   Profile_Index *AP, *RP;
   FILE   *qvs, *bed;
   uint16 *aprof, *rprof;
@@ -112,8 +113,10 @@ static int64 *scan_asm(char *asmb, char *reads, char *out)
   aprof = Malloc(2*pmax*sizeof(uint16),"Profile array");
   rprof = aprof + pmax;
 
-  bed = fopen(Catenate(out,".",asmb,"_only.bed"),"w");
-  qvs = fopen(Catenate(out,".",asmb,".qv"),"w");
+  aroot = Root(asmb,"");
+  bed = fopen(Catenate(out,".",aroot,"_only.bed"),"w");
+  qvs = fopen(Catenate(out,".",aroot,".qv"),"w");
+  free(aroot);
 
   fprintf(qvs,"Assembly Only\tTotal\tError %%\tQV\n");
 
@@ -307,8 +310,9 @@ static int   BMAX;
   //    Output a listing of each block with its hapmer composition for the
   //    production of a blob plot of the blocks.
 
-static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot)
-{ Profile_Index *AP, *MP, *PP;
+static int phase_blocks(char *asmb, char *mroot, char *proot, char *out, char *troot)
+{ char   *aroot;
+  Profile_Index *AP, *MP, *PP;
   FILE   *bed, *plot, *fscf, *fctg, *fblk;
   uint16 *aprof, *mprof, *pprof;
   int     pmax, plen;
@@ -317,21 +321,23 @@ static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot
   int64   stot, mtot;
   int     p, i, x;
 
+  aroot = Root(asmb,"");
+
   AP = Open_Profiles(Catenate(asmb,"","",""));
-  MP = Open_Profiles(Catenate(asmb,".",mat,""));
-  PP = Open_Profiles(Catenate(asmb,".",pat,""));
+  MP = Open_Profiles(Catenate(aroot,".",mroot,""));
+  PP = Open_Profiles(Catenate(aroot,".",proot,""));
   if (AP == NULL)
     { fprintf(stderr,"\n%s: Cannot open/find FastK profile %s.prof\n",Prog_Name,asmb);
       exit (1);
     }
   if (MP == NULL)
     { fprintf(stderr,"\n%s: Cannot open/find FastK relative profile %s.%s.prof\n",
-                     Prog_Name,asmb,mat);
+                     Prog_Name,aroot,mroot);
       exit (1);
     }
   if (PP == NULL)
     { fprintf(stderr,"\n%s: Cannot open/find FastK relative profile %s.%s.prof\n",
-                     Prog_Name,asmb,pat);
+                     Prog_Name,aroot,proot);
       exit (1);
     }
 
@@ -347,11 +353,11 @@ static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot
   fctg = fopen(Catenate(troot,".ctg.un","",""),"w");
   fblk = fopen(Catenate(troot,".blk.un","",""),"w");
 
-  bed  = fopen(Catenate(out,".",asmb,".phased_block.bed"),"w");
+  bed  = fopen(Catenate(out,".",aroot,".phased_block.bed"),"w");
   fprintf(bed,"Scaffold\tStart\tEnd\tPhase\tPurity\tSwitches\tMarkers\n");
 
   plot = fopen(Catenate(troot,".hpi","",""),"w");
-  fprintf(plot,"Block\tRange\t%s\t%s\tSize\n",mat,pat);
+  fprintf(plot,"Block\tRange\t%s\t%s\tSize\n",mroot,proot);
 
   stot = 0;
   mtot = 0;
@@ -382,7 +388,7 @@ static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot
       Fetch_Profile(PP,p,pmax,pprof);
       aprof[plen] = 0;
       aprof[plen+1] = 1;
-      fprintf(fscf,"scaffold\t%s\t%d\n",asmb,plen);
+      fprintf(fscf,"scaffold\t%s\t%d\n",aroot,plen);
 
       //  For each contig, build stack of hap sites (= overlapping hap-mers), merging adjacent
       //    sites of the same polarity and then call process_blocks to finish the partitioning
@@ -435,7 +441,7 @@ static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot
 
               if (mtop > 0)
                 { nctg += 1;
-                  fprintf(fctg,"contig\t%s\t%d\n",asmb,(x-frst)+(KMER-1));
+                  fprintf(fctg,"contig\t%s\t%d\n",aroot,(x-frst)+(KMER-1));
 
                   mtop = merge_blocks(mtop,mark);
 
@@ -447,17 +453,17 @@ static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot
                         { ns = -mark[i].opp;
                           to = ns + mark[i].mrk;
                           fprintf(bed,"%d\t%d\t%d\t%s\t%.3f\t%d\t%d\n",
-                                      nctg,mark[i].beg,mark[i].end,mat,(100.*ns)/to,ns,to);
-                          fprintf(plot,"%s\t%d\t%d\t%d\t%d\n",mat,NBLK+i,to-ns,ns,len);
-                          fprintf(fblk,"block\t%s\t%d\n",mat,len);
+                                      nctg,mark[i].beg,mark[i].end,mroot,(100.*ns)/to,ns,to);
+                          fprintf(plot,"%s\t%d\t%d\t%d\t%d\n",mroot,NBLK+i,to-ns,ns,len);
+                          fprintf(fblk,"block\t%s\t%d\n",mroot,len);
                         }
                       else
                         { ns = mark[i].opp;
                           to = ns - mark[i].mrk;
                           fprintf(bed,"%d\t%d\t%d\t%s\t%.3f\t%d\t%d\n",
-                                      nctg,mark[i].beg,mark[i].end,pat,(100.*ns)/to,ns,to);
-                          fprintf(plot,"%s\t%d\t%d\t%d\t%d\n",pat,NBLK+i,ns,to-ns,len);
-                          fprintf(fblk,"block\t%s\t%d\n",pat,len);
+                                      nctg,mark[i].beg,mark[i].end,proot,(100.*ns)/to,ns,to);
+                          fprintf(plot,"%s\t%d\t%d\t%d\t%d\n",proot,NBLK+i,ns,to-ns,len);
+                          fprintf(fblk,"block\t%s\t%d\n",proot,len);
                         }
                       stot += ns;
                       mtot += to;
@@ -498,10 +504,12 @@ static int phase_blocks(char *asmb, char *mat, char *pat, char *out, char *troot
   Free_Profiles(PP);
   Free_Profiles(AP);
 
+  free(aroot);
+
   return (nctg != nscf);
 }
 
-static void block_stats(char *asmb, char *out, char *troot)
+static void block_stats(char *aroot, char *out, char *troot)
 { FILE *sfile, *nfile;
   int   bn50;
   int64 sum, thr;
@@ -516,7 +524,7 @@ static void block_stats(char *asmb, char *out, char *troot)
     }
   fclose(nfile);
   
-  sfile = fopen(Catenate(out,".",asmb,".phased_block.stats"),"w");
+  sfile = fopen(Catenate(out,".",aroot,".phased_block.stats"),"w");
   fprintf(sfile,"# Blocks\tSum\tMin.\tAvg.\tN50\tMax.\n");
   fprintf(sfile,"%d\t%lld\t%d\t%lld\t%d\t%d\n",NBLK,BTOT,BMIN,BTOT/NBLK,bn50,BMAX);
   fclose(sfile);
@@ -551,6 +559,7 @@ static int check_table(char *name, int lmer)
 
 int main(int argc, char *argv[])
 { char  *READS, *ASM[2], *MAT, *PAT, *OUT;
+  char  *RROOT, *AROOT[2], *MROOT, *PROOT;
   int    LINE, FILL, STACK;
   int    PDF;
   int    ZGRAM;
@@ -712,41 +721,47 @@ int main(int argc, char *argv[])
         ASM[0] = argv[4];
         ASM[1] = argv[5];
         break;
-      default:
-        ;
     }
     OUT = argv[argc-1];
 
     //  Remove any suffixes from argument names
 
-    { char *suffix[9] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db", ".sam", ".bam", ".cram" };
+    { char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
+                           ".dam", ".sam", ".bam", ".cram" };
 
       troot = mktemp(template);
+
+      READS = PathnRoot(READS,".ktab");
+      RROOT = Root(READS,"");
+      if (MAT != NULL)
+        { char *x;
+
+          x   = PathnRoot(MAT,".ktab");
+          MAT = PathnRoot(x,".hap");
+          free(x);
+          x   = PathnRoot(PAT,".ktab");
+          PAT = PathnRoot(x,".hap");
+          free(x);
+
+          MROOT = Root(MAT,"");
+          PROOT = Root(PAT,"");
+        }
 
       for (i = 0; i < 2; i++)
         { char *A = ASM[i];
           int   len;
 
           if (A == NULL)
-            continue;
+            { AROOT[i] = NULL;
+              continue;
+            }
 
-          for (j = 0; j < 9; j++)
+          for (j = 0; j < 10; j++)
             { len = strlen(A) - strlen(suffix[j]);
               if (strcmp(A+len,suffix[j]) == 0)
                 A[len] = '\0';
             }
-        }
-
-      READS = Root(READS,".ktab");
-      if (MAT != NULL)
-        { char *x;
-
-          x   = Root(MAT,".ktab");
-          MAT = Root(x,".hap");
-          free(x);
-          x   = Root(PAT,".ktab");
-          PAT = Root(x,".hap");
-          free(x);
+          AROOT[i] = Root(A,"");
         }
 
       KMER = check_table(Catenate(READS,".ktab","",""),0);
@@ -813,6 +828,7 @@ int main(int argc, char *argv[])
 
       for (i = 0; i < 2; i++)
         { char  *A = ASM[i];
+          char  *R = AROOT[i];
           double err, qv;
 
           if (A == NULL)
@@ -824,7 +840,7 @@ int main(int argc, char *argv[])
           system(command);
 
           sprintf(command,"FastK -k%d -T%d -P%s -p:%s %s -N%s.%s",
-                          KMER,NTHREADS,SORT_PATH,READS,A,A,READS); 
+                          KMER,NTHREADS,SORT_PATH,READS,A,R,RROOT); 
           system(command);
 
           //  Make a CN-spectra plot
@@ -832,21 +848,21 @@ int main(int argc, char *argv[])
           if (VERBOSE)
             fprintf(stderr,"\n Making CN-spectra plots for %s\n",A);
 
-          sprintf(Out,"%s.%s.spectra-cn",OUT,A);
+          sprintf(Out,"%s.%s.spectra-cn",OUT,R);
           cn_plot(Out,A,READS,
                   XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                   LINE,FILL,STACK,troot,NTHREADS);
 
           //  Compute scaffold QV's and make bed file
 
-          sprintf(ArelR,"%s.%s",A,READS);
+          sprintf(ArelR,"%s.%s",R,RROOT);
           summary = scan_asm(A,ArelR,OUT);
 
           //  Output global qv
 
           err = 1. - pow(1.-(1.*summary[0])/summary[1],1./KMER);
           qv  = -10.*log10(err); 
-          fprintf(qvs,"%s\t%lld\t%lld\t%.4f\t%.1f\n",A,summary[0],summary[1],100.*err,qv);
+          fprintf(qvs,"%s\t%lld\t%lld\t%.4f\t%.1f\n",R,summary[0],summary[1],100.*err,qv);
 
           if (i == 0)
             { miss = summary[0];
@@ -884,7 +900,7 @@ int main(int argc, char *argv[])
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[0],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[0],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
                                                   (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
@@ -896,7 +912,7 @@ int main(int argc, char *argv[])
         //   Produce assembly-spectra plots
 
         if (VERBOSE)
-          fprintf(stderr,"\n Making Assembly-spectra plot for %s\n",*ASM);
+          fprintf(stderr,"\n Making Assembly-spectra plot for %s\n",ASM[0]);
 
         sprintf(Out,"%s.spectra-asm",OUT);
 
@@ -944,13 +960,13 @@ int main(int argc, char *argv[])
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[0],H->hist[1],SOLID_COUNT,
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[0],H->hist[1],SOLID_COUNT,
                                                   H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.1",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",ASM[1],H->hist[1],SOLID_COUNT,
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[1],H->hist[1],SOLID_COUNT,
                                                   H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
@@ -996,6 +1012,7 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < 2; i++)
       { char      *A = ASM[i];
+        char      *R = AROOT[i];
         Histogram *H, *G;
 
         if (A == NULL)
@@ -1004,7 +1021,7 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Making CN-spectra plots for %s versus assembly %s\n",MAT,A);
 
-        sprintf(Out,"%s.%s.%s.spectra-cn",OUT,A,MAT);
+        sprintf(Out,"%s.%s.%s.spectra-cn",OUT,R,MROOT);
         cn_plot(Out,A,MAT,
                 XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                 LINE,FILL,STACK,troot,NTHREADS);
@@ -1012,7 +1029,7 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Making CN-spectra plots for %s versus assembly %s\n",PAT,A);
 
-        sprintf(Out,"%s.%s.%s.spectra-cn",OUT,A,PAT);
+        sprintf(Out,"%s.%s.%s.spectra-cn",OUT,R,PROOT);
         cn_plot(Out,A,PAT,
                 XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
                 LINE,FILL,STACK,troot,NTHREADS);
@@ -1030,8 +1047,8 @@ int main(int argc, char *argv[])
         sprintf(Hname,"%s.0",troot);
         G = Load_Histogram(Hname);
 
-        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",A,MAT,H->hist[1],G->hist[1],
-                                                       H->hist[1]/(.01*G->hist[1]));
+        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",R,MROOT,H->hist[1],G->hist[1],
+                                                         H->hist[1]/(.01*G->hist[1]));
 
         Free_Histogram(G);
         Free_Histogram(H);
@@ -1041,7 +1058,7 @@ int main(int argc, char *argv[])
         sprintf(Hname,"%s.1",troot);
         G = Load_Histogram(Hname);
 
-        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",A,PAT,H->hist[1],G->hist[1],
+        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",R,PROOT,H->hist[1],G->hist[1],
                                                        H->hist[1]/(.01*G->hist[1]));
 
         Free_Histogram(G);
@@ -1065,6 +1082,7 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < 2; i++)
       { char *A = ASM[i];
+        char *R = AROOT[i];
         int   do_scaffs;
 
         if (A == NULL)
@@ -1074,22 +1092,22 @@ int main(int argc, char *argv[])
           fprintf(stderr,"\n Producing relative profiles for phasing block calculation on %s\n",A);
 
         sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s.%s",
-                        NTHREADS,SORT_PATH,KMER,MAT,A,A,MAT);
+                        NTHREADS,SORT_PATH,KMER,MAT,A,R,MROOT);
         system(command);
 
         sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s.%s",
-                        NTHREADS,SORT_PATH,KMER,PAT,A,A,PAT);
+                        NTHREADS,SORT_PATH,KMER,PAT,A,R,PROOT);
         system(command);
 
         if (VERBOSE)
           fprintf(stderr,"\n Computing phasing blocks for assemlby %s\n",A);
 
-        do_scaffs = phase_blocks(A, MAT, PAT, OUT, troot);
+        do_scaffs = phase_blocks(A, MROOT, PROOT, OUT, troot);
 
         if (VERBOSE)
           fprintf(stderr,"\n Producing phased blob plot of the imputed blocks of assembly %s\n",A);
 
-        sprintf(Out,"%s.%s.phased_block.blob",OUT,A);
+        sprintf(Out,"%s.%s.phased_block.blob",OUT,R);
         hap_plot(Out,MAT,PAT,ASM,XDIM,YDIM,PDF,troot);
 
         if (VERBOSE)
@@ -1106,7 +1124,7 @@ int main(int argc, char *argv[])
 
         //  Output block partition stats now that have block.sizes needed to compute N50
 
-        block_stats(A,OUT,troot);
+        block_stats(R,OUT,troot);
 
         //  Plot the block.N and continuity N-curves
 
@@ -1114,7 +1132,7 @@ int main(int argc, char *argv[])
         if (do_scaffs)
           sprintf(command+strlen(command)," -s %s.scaff.sizes",troot);
         sprintf(command+strlen(command)," -o %s.%s%s -x %g -y %g 2>/dev/null",
-                                        OUT,A,PDF?" -p":" ",XDIM,YDIM);
+                                        OUT,R,PDF?" -p":" ",XDIM,YDIM);
         system(command);
 
         sprintf(command,"rm %s.scf.un %s.scaff.sizes",troot,troot);
@@ -1136,7 +1154,7 @@ int main(int argc, char *argv[])
       { if (ASM[1] == NULL)
           fprintf(stderr,"\n Producing phased blob plots of the contigs of the assembly\n");
         else
-          fprintf(stderr,"\n Producing phased plots of the contigs of the assemblies\n");
+          fprintf(stderr,"\n Producing phased blob plots of the contigs of the assemblies\n");
       }
 
     sprintf(Out,"%s.hapmers.blob",OUT);
@@ -1148,21 +1166,27 @@ clean_up:
 
     for (i = 0; i < 2; i++)
       { char *A = ASM[i];
+        char *R = AROOT[i];
  
         if (A == NULL)
           continue;
 
         if (MAT != NULL)
-          sprintf(command,"Fastrm %s %s.%s %s.%s %s.%s",A,A,READS,A,MAT,A,PAT);
+          sprintf(command,"Fastrm %s %s.%s %s.%s %s.%s",A,R,RROOT,R,MROOT,R,PROOT);
         else
-          sprintf(command,"Fastrm %s %s.%s",A,A,READS);
+          sprintf(command,"Fastrm %s %s.%s",A,R,RROOT);
         system(command);
+
+        free(R);
       }
 
     if (MAT != NULL)
-      { free(MAT);
+      { free(PROOT);
+        free(MROOT);
         free(PAT);
+        free(MAT);
       }
+    free(RROOT);
     free(READS);
   }
 

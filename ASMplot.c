@@ -185,13 +185,14 @@ int main(int argc, char *argv[])
   }
 
   { char *troot;
-    char *suffix[9] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db", ".sam", ".bam", ".cram" };
+    char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
+                         ".dam", ".sam", ".bam", ".cram" };
     char  command[5000];
     int   i, j, len;
 
     troot = mktemp(template);
 
-    READS = Root(READS,".ktab");
+    READS = PathnRoot(READS,".ktab");
 
     KMER = check_table(Catenate(READS,".ktab","",""),0);
 
@@ -199,7 +200,7 @@ int main(int argc, char *argv[])
       { if (ASM[i] == NULL)
           continue;
 
-        for (j = 0; j < 9; j++)
+        for (j = 0; j < 10; j++)
           { len = strlen(ASM[i]) - strlen(suffix[j]);
             if (strcmp(ASM[i]+len,suffix[j]) == 0)
               ASM[i][len] = '\0';

@@ -89,8 +89,9 @@ void *Realloc(void *object, int64 size, char *mesg);     //  and strdup, that ou
 char *Strdup(char *string, char *mesg);                  //  stderr if out of memory
 char *Strndup(char *string, int len, char *mesg);        //  stderr if out of memory
 
-char *PathTo(char *path);                // Return path portion of file name "path"
-char *Root(char *path, char *suffix);    // Return the root name, excluding suffix, of "path"
+char *PathTo(char *path);                   // Return path portion of file name "path"
+char *Root(char *path, char *suffix);       // Return the root name, excluding suffix, of "path"
+char *PathnRoot(char *path, char *suffix);  // Return the path name, excluding suffix, of "path"
 
 // Catenate returns concatenation of path.sep.root.suffix in a *temporary* buffer
 // Numbered_Suffix returns concatenation of left.<num>.right in a *temporary* buffer

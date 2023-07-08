@@ -14,6 +14,8 @@
 #include <dirent.h>
 #include <math.h>
 
+#undef KAMIL   //  if set then instead of plots output R-script tables as OUT.hpi
+
 #undef DEBUG
 
 #include "libfastk.h"
@@ -31,6 +33,9 @@ void hap_plot(char  *OUT, char  *MAT, char  *PAT, char **ASM,
   int            nct, mct, pct, cln;
   int            i, c, x;
   FILE          *f;
+
+  MAT = Root(MAT,"");
+  PAT = Root(PAT,"");
 
   f = fopen(Catenate(troot,".hpi","",""),"r");
   if (f != NULL)
@@ -56,10 +61,11 @@ void hap_plot(char  *OUT, char  *MAT, char  *PAT, char **ASM,
   pprof = mprof + pmax;
 
   for (i = 0; i < 2; i++)
-    { char *asmx = ASM[i];
-      if (asmx == NULL)
+    { char *asmx;
+      if (ASM[i] == NULL)
         continue;
-      sprintf(name,"%s.prof",asmx);
+      asmx = Root(ASM[i],"");
+      sprintf(name,"%s.prof",ASM[i]);
       AI = Open_Profiles(name);
       sprintf(name,"%s.%s.prof",asmx,MAT);
       MI = Open_Profiles(name);
@@ -102,12 +108,22 @@ void hap_plot(char  *OUT, char  *MAT, char  *PAT, char **ASM,
               fprintf(f,"%s\t%d\t%d\t%d\t%d\n",asmx,nct,mct,pct,cln);
             }
         }
+      free(asmx);
     }
 
   free(aprof);
 
 plot:
   fclose(f);
+
+#ifdef KAMIL
+
+  (void) XDIM; (void) YDIM; (void) PDF;
+
+  sprintf(command,"mv %s.hpi %s.hpi",troot,OUT);
+  system(command);
+
+#else
 
   //  Generate the R plot script
 
@@ -124,15 +140,19 @@ plot:
 
   //  Call the R plotter with arguments
 
-// sprintf(command,"Rscript %s.R -f %s.hpi -o %s%s -x %g -y %g 2>/dev/null",
-  sprintf(command,"Rscript %s.R -f %s.hpi -o %s%s -x %g -y %g",
+  sprintf(command,"Rscript %s.R -f %s.hpi -o %s%s -x %g -y %g 2>/dev/null",
                   troot,troot,OUT,PDF?" -p":" ",XDIM,YDIM);
+#ifdef DEBUG
   printf("%s\n",command);
   fflush(stdout);
-#ifdef DEBUG
 #endif
   system(command);
 
   sprintf(command,"rm -f %s.hpi %s.R",troot,troot);
   system(command);
+
+#endif // KAMIL
+
+  free(PAT);
+  free(MAT);
 }

@@ -14,6 +14,9 @@
 #include <dirent.h>
 #include <math.h>
 
+#undef KAMIL   //  if set then instead of plots output R-script tables as OUT.cni and
+                //      if -z is sent then OUT.cnz
+
 #undef DEBUG
 
 #define MASS  .98   //  Must adjust x axis so see 98% of the mass of every curve
@@ -246,6 +249,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
     printf("Writing %s\n",Catenate(troot,".cni","",""));
   fflush(stdout);
 #endif
+
   fprintf(f,"Copies\tkmer_multiplicity\tCount\n");
   for (i = 0; i <= 5; i++)
     { int    low  = H[i]->low;
@@ -273,6 +277,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
         printf("Writing %s\n",Catenate(troot,".cnz","",""));
       fflush(stdout);
 #endif
+
       fprintf(f,"1\t0\t%lld\n",hist[1]);
       val = 0;
       for (k = 2; k <= high; k++)
@@ -285,6 +290,19 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
 
   sprintf(command,"Fastrm %s.*.hist",troot);
   system(command);
+
+#ifdef KAMIL
+
+  (void) XDIM; (void) YDIM; (void) PDF;
+
+  sprintf(command,"mv %s.cni %s.cni",troot,OUT);
+  system(command);
+  if (ZGRAM)
+    { sprintf(command,"mv %s.cnz %s.cnz",troot,OUT);
+      system(command);
+    }
+
+#else
 
   //  Generate the R plot script
 
@@ -334,4 +352,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
 
   sprintf(command,"rm -f %s.cni %s.cnz %s.R",troot,troot,troot);
   system(command);
+
+#endif  // KAMIL
+
 }
