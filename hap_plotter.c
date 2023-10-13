@@ -82,10 +82,10 @@ void hap_plot(char  *OUT, char  *MAT, char  *PAT, char **ASM,
                 exit (1);
               mprof = aprof + pmax;
               pprof = mprof + pmax;
-              Fetch_Profile(AI,i,pmax,aprof);
+              Fetch_Profile(AI,c,pmax,aprof);
             }
-          Fetch_Profile(MI,i,pmax,mprof);
-          Fetch_Profile(PI,i,pmax,pprof);
+          Fetch_Profile(MI,c,pmax,mprof);
+          Fetch_Profile(PI,c,pmax,pprof);
 
           cln = 0;
           mct = pct = 0;
