@@ -113,6 +113,6 @@ Profile_Index *Clone_Profiles(Profile_Index *P);
 
 void Free_Profiles(Profile_Index *P);
 
-int Fetch_Profile(Profile_Index *P, int64 id, int plen, uint16 *profile);
+int64 Fetch_Profile(Profile_Index *P, int64 id, int64 plen, uint16 *profile);
 
 #endif // _LIBFASTK

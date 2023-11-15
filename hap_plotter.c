@@ -29,7 +29,7 @@ void hap_plot(char  *OUT, char  *MAT, char  *PAT, char **ASM,
   char           name[1000];
   Profile_Index *AI, *MI, *PI;
   uint16        *aprof, *mprof, *pprof;
-  int            pmax, plen;
+  int64          pmax, plen;
   int            nct, mct, pct, cln;
   int            i, c, x;
   FILE          *f;

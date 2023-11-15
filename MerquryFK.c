@@ -79,7 +79,7 @@ static int64 *scan_asm(char *asmb, char *reads, char *out)
   Profile_Index *AP, *RP;
   FILE   *qvs, *bed;
   uint16 *aprof, *rprof;
-  int     pmax, plen;
+  int64   pmax, plen;
   int     i, x, last;
   int64   miss, tots;
   int64   TOTS, MISS;
@@ -315,7 +315,7 @@ static int phase_blocks(char *asmb, char *mroot, char *proot, char *out, char *t
   Profile_Index *AP, *MP, *PP;
   FILE   *bed, *plot, *fscf, *fctg, *fblk;
   uint16 *aprof, *mprof, *pprof;
-  int     pmax, plen;
+  int64   pmax, plen;
   Mark   *mark;
   int     nctg, nscf;
   int64   stot, mtot;
@@ -388,7 +388,7 @@ static int phase_blocks(char *asmb, char *mroot, char *proot, char *out, char *t
       Fetch_Profile(PP,p,pmax,pprof);
       aprof[plen] = 0;
       aprof[plen+1] = 1;
-      fprintf(fscf,"scaffold\t%s\t%d\n",aroot,plen);
+      fprintf(fscf,"scaffold\t%s\t%lld\n",aroot,plen);
 
       //  For each contig, build stack of hap sites (= overlapping hap-mers), merging adjacent
       //    sites of the same polarity and then call process_blocks to finish the partitioning

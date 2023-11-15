@@ -1410,7 +1410,7 @@ void Free_Profiles(Profile_Index *_P)
   //    Returns the length of the uncompressed profile.  If the plen is less than
   //    this then only the first plen counts are uncompressed into profile
 
-int Fetch_Profile(Profile_Index *_P, int64 id, int plen, uint16 *profile)
+int64 Fetch_Profile(Profile_Index *_P, int64 id, int64 plen, uint16 *profile)
 { _Profile_Index *P = PROFILE(_P);
 
   uint8 *count, *cend;
@@ -1418,7 +1418,7 @@ int Fetch_Profile(Profile_Index *_P, int64 id, int plen, uint16 *profile)
   int    w, len;
   uint8 *p, *q;
   uint16 x, d, i;
-  int    n;
+  int64  n;
 
   for (w = 0; w < P->nparts; w++)
     if (id < P->nbase[w])
