@@ -25,43 +25,57 @@
 
 #include "cn_plot.R.h"
 
-void cn_plot(char  *OUT, char  *ASM, char  *READS,
+void cn_plot(char  *OUT, int KEEP, char *ATABLE, char *RTABLE,
              double XDIM, double YDIM,
              double XREL, double YREL,
              int    XMAX, int64  YMAX,
              int    PDF, int ZGRAM, int LINE, int FILL, int STACK,
-             char  *troot, int NTHREADS)
+             int    NTHREADS)
         
 { char      command[1000];  //  buffers for commands & parts thereof
   char      what[1000];
   char      extra[1000];
+  char      template[20] = "._CN_PLT.XXXXXX";
+  char     *troot;
   Histogram *H[7];
   int        i, k;
   char      *Label[] = { "read-only", "1", "2", "3", "4", ">4" };
   FILE      *f;
 
-  ZGRAM = (ZGRAM != 0);
+  troot = mktemp(template);
 
-  //  Call Logex to make desired histograms
+  if (NTHREADS == 0)                                 //  Short cut
+    { f = fopen(Catenate(OUT,".cni","",""),"r");
+      if (f == NULL)
+        { fprintf(stderr,"%s: Could not find and open %s\n",Prog_Name,Catenate(OUT,".cni","",""));
+          exit (1);
+        }
+      for (i = 0; i < 7; i++)
+        { H[i] = Read_Histogram(f);
+          Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
+        }
+      fclose(f);
+    }
 
-  sprintf(what,"'%s.0=B-A' '%s.1=B&.A[1]' '%s.2=B&.A[2]' '%s.3=B&.A[3]' '%s.4=B&.A[4]'",
-               troot,troot,troot,troot,troot);
-  if (ZGRAM)
-    sprintf(extra," '%s.5=B&.A[5-]' '%s.6=A-B'",troot,troot);
-  else
-    sprintf(extra," '%s.5=B&.A[5-]'",troot);
-  sprintf(command,"Logex -T%d -H1000 %s%s %s %s",NTHREADS,what,extra,ASM,READS);
+  else     //  Call Logex to make desired histograms
+
+    { sprintf(what,"'%s.0=B-A' '%s.1=B&.A[1]' '%s.2=B&.A[2]' '%s.3=B&.A[3]' '%s.4=B&.A[4]'",
+                   troot,troot,troot,troot,troot);
+      sprintf(extra," '%s.5=B&.A[5-]' '%s.6=A-B'",troot,troot);
+      sprintf(command,"Logex -T%d -H1000 %s%s %s %s",NTHREADS,what,extra,ATABLE,RTABLE);
 #ifdef DEBUG
-  printf("%s\n",command);
-  fflush(stdout);
+      printf("%s\n",command);
+      fflush(stdout);
 #endif
-  system(command);
+      SystemX(command);
 
-  //  Open all histograms
+      //  Open all histograms
 
-  for (i = 0; i <= 5+ZGRAM; i++)
-    { sprintf(command,"%s.%d",troot,i);
-      H[i] = Load_Histogram(command);
+      for (i = 0; i < 7; i++)
+        { sprintf(command,"%s.%d",troot,i);
+          H[i] = Load_Histogram(command);
+          Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
+        }
     }
 
   //  If relative x- or y-max then must find peak x,y
@@ -256,9 +270,13 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
       int    high = H[i]->high;
       int64 *hist = H[i]->hist;
 
+      for (k = 1; k < low; k++)
+        fprintf(f,"%s\t%d\t0\n",Label[i],k);
       for (k = low; k < high; k++)
-        if (hist[k] > 0)
+        { if (k > XMAX)
+            break;
           fprintf(f,"%s\t%d\t%lld\n",Label[i],k,hist[k]);
+        }
     }
   fclose(f);
 
@@ -286,23 +304,12 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
       fclose(f);
     }
 
-  //  Remove all the FastK histograms except A-B
+  //  Remove all the FastK histograms (if computed)
 
-  sprintf(command,"Fastrm %s.*.hist",troot);
-  system(command);
-
-#ifdef KAMIL
-
-  (void) XDIM; (void) YDIM; (void) PDF;
-
-  sprintf(command,"mv %s.cni %s.cni",troot,OUT);
-  system(command);
-  if (ZGRAM)
-    { sprintf(command,"mv %s.cnz %s.cnz",troot,OUT);
-      system(command);
+  if (NTHREADS > 0)
+    { sprintf(command,"Fastrm %s.*.hist",troot);
+      SystemX(command);
     }
-
-#else
 
   //  Generate the R plot script
 
@@ -331,7 +338,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
       printf("%s\n",command);
       fflush(stdout);
 #endif
-      system(command);
+      SystemX(command);
     }
   if (FILL)
     { sprintf(command,"%s -t fill%s 2>/dev/null",what,extra);
@@ -339,7 +346,7 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
       printf("%s\n",command);
       fflush(stdout);
 #endif
-      system(command);
+      SystemX(command);
     }
   if (STACK)
     { sprintf(command,"%s -t stack%s 2>/dev/null",what,extra);
@@ -347,12 +354,18 @@ void cn_plot(char  *OUT, char  *ASM, char  *READS,
       printf("%s\n",command);
       fflush(stdout);
 #endif
-      system(command);
+      SystemX(command);
+    }
+
+  if (KEEP)
+    { FILE *f;
+
+      f = fopen(Catenate(OUT,".cni","",""),"w");
+      for (i = 0; i < 7; i++)
+        Dump_Histogram(f,H[i]);
+      fclose(f);
     }
 
   sprintf(command,"rm -f %s.cni %s.cnz %s.R",troot,troot,troot);
-  system(command);
-
-#endif  // KAMIL
-
+  SystemX(command);
 }

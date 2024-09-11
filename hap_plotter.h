@@ -7,5 +7,6 @@
  *
  *********************************************************************************************/
  
-int64 hap_plot(char  *OUT, char *MAT, char *PAT, char **ASM,
-               double XDIM, double YDIM, int PDF, char  *troot);
+int64 hap_plot(char *OUT, int KEEP, char *MAT, char *PAT, char **ASM,
+                                    char **MPROF, char **PPROF, char **APROF,
+                                    double XDIM, double YDIM, int PDF);

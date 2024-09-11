@@ -18,7 +18,7 @@
 
 The original [Merqury](https://github.com/marbl/merqury) is a collection of R, Java, and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
 **MerquryFK** replaces meryl with the **FastK** k-mer counter suite to considerably speed up analyses.
-Moreover, all the R, Java, and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  In addition, we have realized some analyses, **KatComp** and **KatGC**, that one finds
+Moreover, all the R, Java, and shell scripts have been refactored into a typical collection of UNIX command line tools that the user will hopefully experience as easier to comprehend and invoke.  It does still require that R be installed and that the R-packages ```argparse```, ```ggplot2```, ```scales```, ```viridis```, and ```cowplot``` are present.  In addition, we have realized some analyses, **KatComp** and **KatGC**, that one finds
 only in the somewhat similar [KAT](https://github.com/TGAC/KAT) k-mer suite developed at the Earlham Institute.
 Lastly, we include in this collection, **PloidyPlot** which is an improved version of the
 ploidy plotting tool [SmudgePlot](https://github.com/KamilSJaron/smudgeplot).
@@ -67,8 +67,13 @@ reporting to the standard error.
 ```
 2. CNplot [-w<double(6.0)>] [-h<double(4.5)>]
           [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-          [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
-          <reads>[.ktab] <asm:dna> <out>
+          [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
+          <reads>[.ktab] <asm:dna> <out>[.cni]
+or
+          
+   CNplot [-w<double(6.0)>] [-h<double(4.5)>]
+          [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
+          [-v] [-lfs] [-pdf] [-z] <out>[.cni]
 ```
 
 Given a k-mer table, produced by FastK, for
@@ -100,6 +105,15 @@ The -T option can be used to control the number of threads used, -v turns on ver
 reporting to the standard error, and -P is passed through to the calls to FastK so you can
 specify the temp directory if needed.
 
+If the -k option is set then in addition to producing the requested .png or .pdf files with
+root path \<out\>, CNplot also creates \<out\>.cni that contains the processed data that is given to an R-script to produce the plots.  This allows
+users to call CNplot again, but with just \<out\>[.cni] as the primary argument, and the
+plots will be produced again under control of the parameters given.  This saves having to
+wait for the plotting data to have to be computed again, and permits one to repeatedly
+plot until they are satisfied with the size, scaling, and form.
+
+The use is responsible for deleting \<out\>.cni when desired.
+
 <br>
 
 <a name="ASMplot"></a>
@@ -107,8 +121,13 @@ specify the temp directory if needed.
 ```
 3. ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
            [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-           [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
-           <reads>[.ktab] <asm1:dna> [<asm2:dna>] <out>
+           [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
+           <reads>[.ktab] <asm1:dna> [<asm2:dna>] <out>[.asmi]
+or
+
+   ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
+           [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
+           [-v] [-lfs] [-pdf] [-z] <out>[.asmi]
 ```
 
 ASMplot has the same optional parameters with the same meaning as CNplot.  What is
@@ -117,13 +136,18 @@ asm1 or asm2, (b) in asm1 but not asm2, (c) in asm2 but not asm1, and (d) in bot
 asm2.  If asm2 is missing, then it looks at the spectra of the read k-mers that are and
 are not in asm1.  The legend is appropriately labeled.
 
+The -k option works similarly to CNplot save that the short-cut file is \<out\>.asmi.
+
 <br>
 
 <a name="HAPplot"></a>
 
 ```
-4. HAPplot [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
-           <mat>[.hap[.ktab]] <pat>[.hap[.ktab] <asm1:dna> [<asm2:dna>] <out>
+4. HAPplot [-vk] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
+           <mat>[.hap[.ktab]] <pat>[.hap[.ktab] <asm1:dna> [<asm2:dna>] <out>[.hpi]
+or
+           
+   HAPplot [-v] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] <out>[.hpi]
 ```
 
 HAPplot has the relevant optional parameters of CNplot with the same meaning.
@@ -133,6 +157,8 @@ Each assembly contig is plotted as a blob where its size is porportional
 to the contig's length in bases, and its' position is (x,y) where x = # of maternal hap-mers,
 and y = # of paternal hap-mers, in the contig.
 
+The -k option works similarly to CNplot save that the short-cut file is \<out\>.hpi.
+
 <br>
 
 <a name="MerquryFK"></a>
@@ -140,7 +166,7 @@ and y = # of paternal hap-mers, in the contig.
 ```
 5. MerquryFK [-w<double(6.0)>] [-h<double(4.5)>]
              [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-             [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
+             [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
                 <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]
                 <asm1:dna> [<asm2:dna>] <out>
 ```
@@ -150,11 +176,12 @@ run the trio analyses if hap-mer tables (produced by [HAPmaker](#HAPmaker) above
 
 The options on the first 3 lines of the command description are the same as for CNplot
 and have the same interpretation.  Any sub-calls to CNplot, ASMplot, and HAPplot will use
-the option setting if not the defaults.
+the option setting if not the defaults.  So note that if the -k option is set then various
+.cni, .asmi, and .hpi files will be generated with root names as descripted below.
 
 The primary output argument -- \<out> -- is the root path name for all the output files
 produced by MerquryFK.  Specifically, it will produce the following where \<asm> is the
-root name of an assembly file input:
+root name of an input assembly file:
 
 * **\<out>.\<asm>.spectra-cn.(ln+fl+st).(pdf | png)**: cn-spectra plots of \<asm> versus \<reads>
 
@@ -207,6 +234,7 @@ a **filled** heat map of the counts.  The -s option produces a heat map with a c
 **stacked** on top of it.
 
 Another difference with CNplot, is that the y-axis denotes the frequency of k-mers in the second data set, rather than the count of k-mers in the lone data set.
+Also the -k option is not provided as the compute time prefacing the plot is reasonable.
 
 <br>
 
@@ -229,6 +257,7 @@ a **filled** heat map of the counts.  The -s option produces a heat map with a c
 **stacked** on top of it.
 
 Another difference with CNplot, is that the y-axis denotes the % GC content of k-mers, rather than the count of k-mers in the lone data set.
+Also the -k option is not provided as the compute time prefacing the plot is reasonable.
 
 <br>
 
@@ -237,7 +266,11 @@ Another difference with CNplot, is that the y-axis denotes the % GC content of k
 ```
 8. PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
               [-vk] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
-              [-e<int(4)>] <source>[.ktab] <out>
+              <source>[.ktab] <out>[.smu]
+or
+
+   PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
+              [-vk] [-lfs] [-pdf] <out>[.smu]
 ```
 
 This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)
@@ -247,19 +280,13 @@ is not guaranteed to always be correct.
 Almost all the options (-w, -h, -v, -lfs, -pdf, -T) control the output file name and type, display, and number of threads used exactly as described for [CNplot](#CNplot).
 
 Any k-mer with a count of less than -e in the input FastK table \<source> is considered
-an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table that is trimmed to threshold -e.  If the supplied table does not meet these specifications,
+an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table of all k-mers with count 4 or more.  If the supplied table does not meet these specifications,
 then the program takes additional compute time to make it so, but if in a preprocessing
 step, you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
-requirements than this time is saved.  If PloidyPlot is forced to make a trimmed, symmetric table for an input,
-say `<A>`, then
-the call to Symmex will use the temp directory specified by the -P option (if not the default "/tmp") and it
-will produce tables `<A>.trim` and `<A>.symx` which are retained to avoid repeating their computation if PloidyPlot
-is called again on the same input.
+requirements than this time is saved.  If PloidyPlot is forced to make a trimmed, symmetric table for an input, then the call to Symmex will use the temp directory specified by the -P option (if not the default "/tmp").
 
-Even if the input table is symmetric and trimmed to the appropriate -e, the bulk of the
+Even if the input table is symmetric and trimmed, the bulk of the
 time taken by PloidyPlot is in accumulating count statistics of het-mer pairs.  If the
--k option is given then the table of het-mer pair statistics is **k**ept, being stored
-in a file named `<out>.smu`.  This saved table will then be used in
-subsequent calls to PloidyPlot, so that the counting step is avoided.   Each call of the program conservatively reminds you of this table (if present) and asks you if you want
-to use it and skip het-mer counting.  One must continue to
-specify the -k option or this ``short-cut'' table will be deleted on exit. 
+-k option is given then the table of het-mer pair statistics is **k**ept, and stored
+in a file named `<out>.smu`.  This saved table can then be given as the sole required
+argument to PloidyPlot in subsequent calls, so that the time intensive counting step is avoided.

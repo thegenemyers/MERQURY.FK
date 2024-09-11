@@ -33,59 +33,83 @@ static int64 GetCount(Histogram *H)
   return (sum);
 }
 
-void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
+void asm_plot(char  *OUT, int KEEP, char  **ASM, char **ATABLE, char *RTABLE,
               double XDIM, double YDIM,
               double XREL, double YREL,
               int    XMAX, int64  YMAX,
               int    PDF, int ZGRAM, int LINE, int FILL, int STACK,
-              char  *troot, int NTHREADS)
+              int NTHREADS)
 
-{ char      command[1000];
-  char      what[1000];
-  char      extra[1000];
-  Histogram *H[6];
+{ char      command[5000];
+  char      what[5000];
+  char      extra[5000];
+  char      template[18] = "._ASM_PLT.XXXXXX";
+  char     *troot;
+  Histogram *H[7];
   int        i, k, nhist;
   char      *Label[] = { "read-only", "", "", "shared" };
   FILE      *f;
 
+  troot = mktemp(template);
+
+  if (NTHREADS == 0)                                 //  Short cut
+    { int len;
+
+      f = fopen(Catenate(OUT,".asmi","",""),"r");
+      if (f == NULL)
+        { fprintf(stderr,"%s: Could not find and open %s\n",Prog_Name,Catenate(OUT,".asmi","",""));
+          exit (1);
+        }
+      fread(&nhist,sizeof(int),1,f);
+      fread(&len,sizeof(int),1,f);
+      Label[1] = Malloc(len+1,"Allocating Label 1");
+      fread(Label[1],1,len,f);
+      Label[1][len] = '\0';
+      fread(&len,sizeof(int),1,f);
+      Label[2] = Malloc(len+1,"Allocating Label 2");
+      fread(Label[2],1,len,f);
+      Label[2][len] = '\0';
+      for (i = 0; i < 2*nhist-1; i++)
+        { H[i] = Read_Histogram(f);
+          Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
+        }
+      fclose(f);
+    }
+
   //  Call Logex to make desired histograms
 
-  ZGRAM = (ZGRAM != 0);
-
-  if (ASM2 == NULL)
-    { sprintf(what,"'%s.0=B-A' '%s.1=B&.A'",troot,troot);
-      if (ZGRAM)
-        sprintf(extra," '%s.2=A-B'",troot);
-      else
-        sprintf(extra,"");
-      sprintf(command,"Logex -T%d -H1000 %s%s %s %s",NTHREADS,what,extra,ASM1,READS);
-      nhist = 2;
-      Label[1] = Root(ASM1,"");
-      Label[2] = Root(ASM1,"");
-    }
   else
-    { sprintf(what,"'%s.0=C-#(A|B)' '%s.1=C&.(A-B)' '%s.2=C&.(B-A)' '%s.3=C&.#(A&B)'",
-                   troot,troot,troot,troot);
-      if (ZGRAM)
-        sprintf(extra," '%s.4=(A&+B)-C' '%s.5=(A-B)-C' '%s.6=(B-A)-C'",troot,troot,troot);
+    { if (ASM[1] == NULL)
+        { sprintf(what,"'%s.0=B-A' '%s.1=B&.A'",troot,troot);
+          sprintf(extra," '%s.2=A-B'",troot);
+          Label[1] = Root(ASM[0],"");
+          Label[2] = Root(ASM[0],"");
+          nhist = 2;
+          sprintf(command,"Logex -T%d -H1000 %s%s %s %s",NTHREADS,what,extra,ATABLE[0],RTABLE);
+        }
       else
-        sprintf(extra,"");
-      sprintf(command,"Logex -T%d -H1000 %s%s %s %s %s",NTHREADS,what,extra,ASM1,ASM2,READS);
-      Label[1] = Root(ASM1,"");
-      Label[2] = Root(ASM2,"");
-      nhist = 4;
-    }
+        { sprintf(what,"'%s.0=C-#(A|B)' '%s.1=C&.(A-B)' '%s.2=C&.(B-A)' '%s.3=C&.#(A&B)'",
+                       troot,troot,troot,troot);
+          sprintf(extra," '%s.4=(A&+B)-C' '%s.5=(A-B)-C' '%s.6=(B-A)-C'",troot,troot,troot);
+          Label[1] = Root(ASM[0],"");
+          Label[2] = Root(ASM[1],"");
+          nhist = 4;
+          sprintf(command,"Logex -T%d -H1000 %s%s %s %s %s",
+                          NTHREADS,what,extra,ATABLE[0],ATABLE[1],RTABLE);
+        }
 #ifdef DEBUG
-  printf("%s\n",command);
-  fflush(stdout);
+      printf("%s\n",command);
+      fflush(stdout);
 #endif
-  system(command);
+      SystemX(command);
 
-  //  Open all histograms
+      //  Open all histograms
 
-  for (i = 0; i < nhist*(1+ZGRAM)-ZGRAM; i++)
-    { sprintf(command,"%s.%d",troot,i);
-      H[i] = Load_Histogram(command);
+      for (i = 0; i < 2*nhist-1; i++)
+        { sprintf(command,"%s.%d",troot,i);
+          H[i] = Load_Histogram(command);
+          Modify_Histogram(H[i],H[i]->low,H[i]->high,0);
+        }
     }
 
   //  If relative x- or y-max then must find peak x,y
@@ -233,14 +257,22 @@ fflush(stdout);
       int64 *hist = H[i]->hist;
 
       if (nhist == 4 && (i == 1 || i == 2))
-        { for (k = low; k < high; k++)
-            if (hist[k] > 0)
+        { for (k = 1; k < low; k++)
+            fprintf(f,"%s-only\t%d\t0\n",Label[i],k);
+          for (k = low; k < high; k++)
+            { if (k > XMAX)
+                break;
               fprintf(f,"%s-only\t%d\t%lld\n",Label[i],k,hist[k]);
+            }
         }
       else
-        { for (k = low; k < high; k++)
-            if (hist[k] > 0)
+        { for (k = 1; k < low; k++)
+            fprintf(f,"%s\t%d\t0\n",Label[i],k);
+          for (k = low; k < high; k++)
+            { if (k > XMAX)
+                break;
               fprintf(f,"%s\t%d\t%lld\n",Label[i],k,hist[k]);
+            }
         }
     }
   fclose(f);
@@ -267,24 +299,10 @@ fflush(stdout);
       fclose(f);
     }
 
-  sprintf(command,"Fastrm %s.*.hist",troot);
-  system(command);
-
-  free(Label[1]);
-  free(Label[2]);
-
-#ifdef KAMIL
-
-  (void) XDIM; (void) YDIM; (void) PDF; (void) LINE; (void) FILL;
-
-  sprintf(command,"mv %s.asmi %s.asmi",troot,OUT);
-  system(command);
-  if (ZGRAM)
-    { sprintf(command,"mv %s.asmz %s.asmz",troot,OUT);
-      system(command);
+  if (NTHREADS > 0)
+    { sprintf(command,"Fastrm %s.*.hist",troot);
+      SystemX(command);
     }
-
-#else
 
   //  Generate the R plot script
 
@@ -313,7 +331,7 @@ fflush(stdout);
       printf("%s\n",command);
       fflush(stdout);
 #endif
-      system(command);
+      SystemX(command);
     }
   if (FILL)
     { sprintf(command,"%s -t fill%s 2>/dev/null",what,extra);
@@ -321,7 +339,7 @@ fflush(stdout);
       printf("%s\n",command);
       fflush(stdout);
 #endif
-      system(command);
+      SystemX(command);
     }
   if (STACK)
     { sprintf(command,"%s -t stack%s 2>/dev/null",what,extra);
@@ -329,12 +347,28 @@ fflush(stdout);
       printf("%s\n",command);
       fflush(stdout);
 #endif
-      system(command);
+      SystemX(command);
     }
 
+  if (KEEP)
+    { int len;
+
+      f = fopen(Catenate(OUT,".asmi","",""),"w");
+      fwrite(&nhist,sizeof(int),1,f);
+      len = strlen(Label[1]);
+      fwrite(&len,sizeof(int),1,f);
+      fwrite(Label[1],1,len,f);
+      len = strlen(Label[2]);
+      fwrite(&len,sizeof(int),1,f);
+      fwrite(Label[2],1,len,f);
+      for (i = 0; i < 2*nhist-1; i++)
+        Dump_Histogram(f,H[i]);
+      fclose(f);
+    }
+
+  free(Label[1]);
+  free(Label[2]);
+
   sprintf(command,"rm -f %s.asmi %s.asmz %s.R",troot,troot,troot);
-  system(command);
-
-#endif // KAMIL
-
+  SystemX(command);
 }

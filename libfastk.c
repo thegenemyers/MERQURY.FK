@@ -95,6 +95,38 @@ Histogram *Load_Histogram(char *name)
   return (H);
 }
 
+//  Read histogram from current point in file f
+
+Histogram *Read_Histogram(FILE *f)
+{ Histogram *H;
+  int        kmer, low, high;
+  int64      ilowcnt, ihighcnt;
+  int64     *hist;
+
+  fread(&kmer,sizeof(int),1,f);
+  fread(&low,sizeof(int),1,f);
+  fread(&high,sizeof(int),1,f);
+  fread(&ilowcnt,sizeof(int64),1,f);
+  fread(&ihighcnt,sizeof(int64),1,f);
+
+  H    = Malloc(sizeof(Histogram),"Allocating histogram");
+  hist = Malloc(sizeof(int64)*((high-low)+3),"Allocating histogram");
+  if (H == NULL || hist == NULL)
+    exit (1);
+
+  fread(hist,sizeof(int64),((high-low)+1),f);
+
+  H->kmer = kmer;
+  H->low  = low;
+  H->high = high;
+  H->hist = hist = hist-low;
+  H->unique = 1;
+  hist[high+1] = ilowcnt;     // boundary counts for opposite mode hidden at top of histogram
+  hist[high+2] = ihighcnt;
+
+  return (H);
+}
+
 //  Modify histogram so its ragne is 'low'..'hgh' and it displays counts as specified by 'unique'
 
 void Modify_Histogram(Histogram *H, int low, int high, int unique)
@@ -106,41 +138,43 @@ void Modify_Histogram(Histogram *H, int low, int high, int unique)
   if (H->low > low || H->high < high)
     return;
 
-  under  = hist[H->low];
-  over   = hist[H->high];
-  for (i = H->low+1; i <= low; i++)
-    under += hist[i];
-  for (i = H->high-1; i >= high; i--)
-    over += hist[i];
-
-  hunder = hist[H->high+1];
-  hover  = hist[H->high+2];
-  if (H->unique)
-    { for (i = H->low+1; i <= low; i++)
-        hunder += hist[i]*i;
+  if (H->low != low || H->high != high)
+    { under  = hist[H->low];
+      over   = hist[H->high];
+      for (i = H->low+1; i <= low; i++)
+        under += hist[i];
       for (i = H->high-1; i >= high; i--)
-        hover += hist[i]*i;
+        over += hist[i];
+
+      hunder = hist[H->high+1];
+      hover  = hist[H->high+2];
+      if (H->unique)
+        { for (i = H->low+1; i <= low; i++)
+            hunder += hist[i]*i;
+          for (i = H->high-1; i >= high; i--)
+            hover += hist[i]*i;
+        }
+      else
+        { for (i = H->low+1; i <= low; i++)
+            hunder += hist[i]/i;
+          for (i = H->high-1; i >= high; i--)
+            hover += hist[i]/i;
+        }
+
+      if (low != H->low)
+        memmove(H->hist+H->low,H->hist+low,((high-low)+1)*sizeof(int64));
+
+      H->hist += H->low;
+      H->hist  = Realloc(H->hist,((high-low)+3)*sizeof(int64),"Reallocating histogram");
+      H->hist -= low;
+      H->low   = low;
+      H->high  = high;
+
+      H->hist[low]    = under;
+      H->hist[high]   = over;
+      H->hist[high+1] = hunder;
+      H->hist[high+2] = hover;
     }
-  else
-    { for (i = H->low+1; i <= low; i++)
-        hunder += hist[i]/i;
-      for (i = H->high-1; i >= high; i--)
-        hover += hist[i]/i;
-    }
-
-  if (low != H->low)
-    memmove(H->hist+H->low,H->hist+low,((high-low)+1)*sizeof(int64));
-
-  H->hist += H->low;
-  H->hist  = Realloc(H->hist,((high-low)+3)*sizeof(int64),"Reallocating histogram");
-  H->hist -= low;
-  H->low   = low;
-  H->high  = high;
-
-  H->hist[low]    = under;
-  H->hist[high]   = over;
-  H->hist[high+1] = hunder;
-  H->hist[high+2] = hover;
 
   if ((H->unique == 0) != (unique == 0))
     toggle_histogram(H);
@@ -178,6 +212,29 @@ int Write_Histogram(char *name, Histogram *H)
   write(f,hist+(high+2),sizeof(int64));
   write(f,hist+low,sizeof(int64)*((high-low)+1));
   close(f);
+
+  if (H->unique == 0)
+    toggle_histogram(H);
+
+  return (0);
+}
+
+//  Write histogram to current cursor position of FILE f
+
+int Dump_Histogram(FILE *f, Histogram *H)
+{ int64 *hist = H->hist;
+  int    low  = H->low;
+  int    high = H->high;
+
+  if (H->unique == 0)
+    toggle_histogram(H);
+
+  fwrite(&H->kmer,sizeof(int),1,f);
+  fwrite(&low,sizeof(int),1,f);
+  fwrite(&high,sizeof(int),1,f);
+  fwrite(hist+(high+1),sizeof(int64),1,f);
+  fwrite(hist+(high+2),sizeof(int64),1,f);
+  fwrite(hist+low,sizeof(int64),((high-low)+1),f);
 
   if (H->unique == 0)
     toggle_histogram(H);
@@ -1098,6 +1155,13 @@ inline void GoTo_Kmer_Index(Kmer_Stream *_S, int64 i)
     return;
 
   S->cidx = i;
+
+  if (i >= S->nels)
+    { S->csuf = NULL;
+      S->cpre = S->ixlen;
+      S->part = S->nthr+1;
+      return;
+    } 
 
   p = S->inver[i>>S->shift];
   while (index[p] <= i)

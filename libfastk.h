@@ -40,6 +40,9 @@ void       Modify_Histogram(Histogram *H, int low, int high, int unique);
 int        Write_Histogram(char *name, Histogram *H);
 void       Free_Histogram(Histogram *H);
 
+Histogram *Read_Histogram(FILE *f);
+int        Dump_Histogram(FILE *f, Histogram *H);
+
 
   //  K-MER TABLE
 

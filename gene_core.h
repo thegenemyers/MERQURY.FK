@@ -84,6 +84,8 @@ extern char *Prog_Name;   //  Name of program, available everywhere
 //  The following general utilities return NULL if any of their input pointers are NULL, or if they
 //    could not perform their function (in which case they also print an error to stderr).
 
+void SystemX(char *command);                             //  Guarded version of system
+
 void *Malloc(int64 size, char *mesg);                    //  Guarded versions of malloc, realloc
 void *Realloc(void *object, int64 size, char *mesg);     //  and strdup, that output "mesg" to
 char *Strdup(char *string, char *mesg);                  //  stderr if out of memory

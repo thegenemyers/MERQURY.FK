@@ -68,11 +68,18 @@ static int reliable_cutoff(char *input)
   return (thresh);
 }
 
+static char templateImat[20] = "_HMAKE.MAT.I.XXXXXX";
+static char templateIpat[20] = "_HMAKE.PAT.I.XXXXXX";
+static char templateSmat[20] = "_HMAKE.MAT.S.XXXXXX";
+static char templateSpat[20] = "_HMAKE.PAT.S.XXXXXX";
+
 int main(int argc, char *argv[])
 { int    KMER;
   char  *MAT;
   char  *PAT;
   char  *CHILD;
+  char  *MATS, *PATS;
+  char  *MATI, *PATI;
   int    VERBOSE;
   int    NTHREADS;
 
@@ -128,26 +135,32 @@ int main(int argc, char *argv[])
     if (VERBOSE)
       fprintf(stderr,"\n  Computing tables of specific k-mers\n");
 
-    sprintf(command,"Logex -T%d -h '%s.S = A-B' '%s.S = B-A' %s %s",
-                    NTHREADS,MAT,PAT,MAT,PAT);
-    system(command);
+    MATS = mktemp(templateSmat);
+    PATS = mktemp(templateSpat);
 
-    MSOLID = reliable_cutoff(Catenate(MAT,".S",".hist",""));
-    PSOLID = reliable_cutoff(Catenate(PAT,".S",".hist",""));
+    sprintf(command,"Logex -T%d -h '%s = A-B' '%s = B-A' %s %s",
+                    NTHREADS,MATS,PATS,MAT,PAT);
+    SystemX(command);
+
+    MSOLID = reliable_cutoff(Catenate(MATS,"",".hist",""));
+    PSOLID = reliable_cutoff(Catenate(PATS,"",".hist",""));
 
     if (VERBOSE)
       fprintf(stderr,"\n  Specific k-mers reliability cutoffs are %d(mat) & %d(pat)\n",
                      MSOLID,PSOLID);
 
+    MATI = mktemp(templateImat);
+    PATI = mktemp(templateIpat);
+
     if (VERBOSE)
       fprintf(stderr,"\n  Computing tables of specific, inherited k-mers\n");
 
-    sprintf(command,"Logex -T%d -h '%s.I = C&.A[%d-]' '%s.I = C&.B[%d-]' %s.S %s.S %s",
-                    NTHREADS,MAT,MSOLID,PAT,PSOLID,MAT,PAT,CHILD);
-    system(command);
+    sprintf(command,"Logex -T%d -h '%s = C&.A[%d-]' '%s = C&.B[%d-]' %s %s %s",
+                    NTHREADS,MATI,MSOLID,PATI,PSOLID,MATS,PATS,CHILD);
+    SystemX(command);
 
-    MSOLID = reliable_cutoff(Catenate(MAT,".I",".hist",""));
-    PSOLID = reliable_cutoff(Catenate(PAT,".I",".hist",""));
+    MSOLID = reliable_cutoff(Catenate(MATI,"",".hist",""));
+    PSOLID = reliable_cutoff(Catenate(PATI,"",".hist",""));
 
     if (VERBOSE)
       fprintf(stderr,"\n  Inherited k-mers reliability cutoffs are %d(mat) & %d(pat)\n",
@@ -156,12 +169,12 @@ int main(int argc, char *argv[])
     if (VERBOSE)
       fprintf(stderr,"\n  Computing final tables of hap-mers\n");
 
-    sprintf(command,"Logex -T%d '%s.hap = A[%d-]' '%s.hap = B[%d-]' %s.I %s.I",
-                    NTHREADS,MAT,MSOLID,PAT,PSOLID,MAT,PAT);
-    system(command);
+    sprintf(command,"Logex -T%d '%s.hap = A[%d-]' '%s.hap = B[%d-]' %s %s",
+                    NTHREADS,MAT,MSOLID,PAT,PSOLID,MATI,PATI);
+    SystemX(command);
 
-    sprintf(command,"Fastrm %s.S %s.S %s.I %s.I",MAT,PAT,MAT,PAT);
-    system(command);
+    // sprintf(command,"Fastrm %s %s %s %s",MATS,PATS,MATI,PATI);
+    // SystemX(command);
   }
 
   free(CHILD);

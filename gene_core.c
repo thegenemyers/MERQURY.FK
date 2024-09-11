@@ -16,6 +16,13 @@
 
 char *Prog_Name;
 
+void SystemX(char *command)
+{ if (system(command) != 0)
+    { fprintf(stderr,"%s: Command '%s' failed\n",Prog_Name,command);
+      exit (1);
+    }
+}
+
 void *Malloc(int64 size, char *mesg)
 { void *p;
 

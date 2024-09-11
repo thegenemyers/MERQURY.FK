@@ -19,11 +19,16 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
-                         " <reads>[.ktab] <asm>:.dna> <out>"
+                         " [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
+                         " <reads>[.ktab] <asm>:dna> <out>[.cni]"
                        };
 
-static char template[15] = "._CN.XXXX";
+static char *Usage2[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
+                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
+                          " [-v] [-lfs] [-pdf] [-z] <out>[.cni]"
+                       };
+
+static char template[20] = "._CN_TAB.XXXXXX";
 
 static int check_table(char *name, int lmer)
 { int   kmer;
@@ -48,6 +53,7 @@ static int check_table(char *name, int lmer)
 int main(int argc, char *argv[])
 { int    KMER;
   int    VERBOSE;
+  int    KEEP;
   int    LINE, FILL, STACK;
   int    PDF;
   int    ZGRAM;
@@ -82,7 +88,7 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("vlfsz")
+            ARG_FLAGS("vlfszk")
             break;
           case 'h':
             ARG_REAL(YDIM);
@@ -138,12 +144,17 @@ int main(int argc, char *argv[])
     FILL    = flags['f'];
     STACK   = flags['s'];
     ZGRAM   = flags['z'];
+    KEEP    = flags['k'];
 
-    if (argc != 4)
+    if (argc != 2 && argc != 4)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[3]);
+        fprintf(stderr,"  or\n");
+        fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage2[0]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage2[1]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage2[2]);
         fprintf(stderr,"\n");
         fprintf(stderr,"      -w: width in inches of plots\n");
         fprintf(stderr,"      -h: height in inches of plots\n");
@@ -164,6 +175,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
         fprintf(stderr,"\n");
         fprintf(stderr,"      -v: verbose output to stderr\n");
+        fprintf(stderr,"      -k: keep plotting data as <out>.cni for a later go\n");
 	fprintf(stderr,"      -T: number of threads to use\n");
         fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         exit (1);
@@ -172,49 +184,64 @@ int main(int argc, char *argv[])
     if (LINE+FILL+STACK == 0)
       LINE = FILL = STACK = 1;
 
-    READS = argv[1];
-    ASM   = argv[2];
-    OUT   = argv[3];
-  }
-
-  { char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
-                         ".dam", ".sam", ".bam", ".cram" };
-    int   j, len;
-
-    READS = PathnRoot(READS,".ktab");
-
-    KMER = check_table(Catenate(READS,".ktab","",""),0);
-
-    for (j = 0; j < 10; j++)
-      { len = strlen(ASM) - strlen(suffix[j]);
-        if (strcmp(ASM+len,suffix[j]) == 0)
-          ASM[len] = '\0';
+    if (argc == 4)
+      { READS = argv[1];
+        ASM   = argv[2];
       }
+    else
+      { if (KEEP)
+          { fprintf(stderr,"%s: -k is an illegal option for this form of the command\n",Prog_Name);
+            exit (1);
+          }
+      }
+
+    OUT = argv[argc-1];
   }
 
-  { char *troot;
-    char  command[5000];
+  OUT = PathnRoot(OUT,".cni");
 
-    troot = mktemp(template);
+  if (argc == 2)              //  Keeper shortcut
 
-    if (VERBOSE)
-      fprintf(stderr,"\n Making k-mer table for assembly %s\n",ASM);
+    cn_plot(OUT,0,NULL,NULL,XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,LINE,FILL,STACK,0);
 
-    sprintf(command,"FastK -k%d -T%d -P%s -t1 %s",KMER,NTHREADS,SORT_PATH,ASM);
-    system(command);
+  else                        //  Normal executation path
 
-    if (VERBOSE)
-      fprintf(stderr,"\n Making spectra histograms and plotting\n");
+    { char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
+                           ".dam", ".sam", ".bam", ".cram" };
+      char  command[5000];
+      char *ATABLE;
+      int   j, len;
 
-    cn_plot(OUT,ASM,READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,LINE,FILL,STACK,troot,NTHREADS);
+      READS  = PathnRoot(READS,".ktab");
+      ATABLE = mktemp(template);
 
-    sprintf(command,"Fastrm %s",ASM);
-    system(command);
+      KMER = check_table(Catenate(READS,".ktab","",""),0);
 
-  }
+      for (j = 0; j < 10; j++)
+        { len = strlen(ASM) - strlen(suffix[j]);
+          if (strcmp(ASM+len,suffix[j]) == 0)
+            ASM[len] = '\0';
+        }
 
-  free(READS);
+      if (VERBOSE)
+        fprintf(stderr,"\n Making k-mer table for assembly %s\n",ASM);
 
+      sprintf(command,"FastK -k%d -T%d -P%s -t1 %s -N%s",KMER,NTHREADS,SORT_PATH,ASM,ATABLE);
+      SystemX(command);
+
+      if (VERBOSE)
+        fprintf(stderr,"\n Making spectra histograms and plotting\n");
+
+      cn_plot(OUT,KEEP,ATABLE,READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,PDF,ZGRAM,
+                  LINE,FILL,STACK,NTHREADS);
+
+      sprintf(command,"Fastrm %s",ATABLE);
+      SystemX(command);
+
+      free(READS);
+    }
+
+  free(OUT);
   Catenate(NULL,NULL,NULL,NULL);
   Numbered_Suffix(NULL,0,NULL);
   free(Prog_Name);

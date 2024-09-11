@@ -21,11 +21,18 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                         " [-v] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
-                         " <reads>[.ktab] <asm1dna> [<asm2:.dna>] <out>"
+                         " [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
+                         " <reads>[.ktab] <asm1:dna> [<asm2:dna>] <out>[.asmi]"
                        };
 
-static char template[15] = "._ASM.XXXX";
+static char *Usage2[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
+                          " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
+                          " [-v] [-lfs] [-pdf] [-z] <out>[.asmi]"
+                        };
+
+static char template1[20] = "._ASM_TAB1.XXXXXX";
+static char template2[20] = "._ASM_TAB2.XXXXXX";
+static char *template[2] = { template1, template2 };
 
 static int check_table(char *name, int lmer)
 { int   kmer;
@@ -50,6 +57,7 @@ static int check_table(char *name, int lmer)
 int main(int argc, char *argv[])
 { int    KMER;
   int    VERBOSE;
+  int    KEEP;
   int    LINE, FILL, STACK;
   int    PDF;
   int    ZGRAM;
@@ -86,7 +94,7 @@ int main(int argc, char *argv[])
       if (argv[i][0] == '-')
         switch (argv[i][1])
         { default:
-            ARG_FLAGS("vlfsz")
+            ARG_FLAGS("vlfszk")
             break;
           case 'h':
             ARG_REAL(YDIM);
@@ -142,12 +150,17 @@ int main(int argc, char *argv[])
     FILL    = flags['f'];
     STACK   = flags['s'];
     ZGRAM   = flags['z'];
+    KEEP    = flags['k'];
 
-    if (argc != 4 && argc != 5)
+    if (argc != 2 && argc != 4 && argc != 5)
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[3]);
+        fprintf(stderr,"  or\n");
+        fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage2[0]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage2[1]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage2[2]);
         fprintf(stderr,"\n");
         fprintf(stderr,"      -w: width in inches of plots\n");
         fprintf(stderr,"      -h: height in inches of plots\n");
@@ -168,6 +181,7 @@ int main(int argc, char *argv[])
         fprintf(stderr,"      -z: plot counts of k-mers unique to one or both assemblies\n");
         fprintf(stderr,"\n");
         fprintf(stderr,"      -v: verbose output to stderr\n");
+        fprintf(stderr,"      -k: keep plotting data as <out>.asmi for a later go\n");
         fprintf(stderr,"      -T: number of threads to use\n");
         fprintf(stderr,"      -P: Place all temporary files in directory -P.\n");
         exit (1);
@@ -175,60 +189,79 @@ int main(int argc, char *argv[])
 
     if (LINE+FILL+STACK == 0)
       LINE = FILL = STACK = 1;
-    READS  = argv[1];
-    ASM[0] = argv[2];
-    if (argc == 5)
-      ASM[1] = argv[3];
+
+    if (argc >= 4)
+      { READS  = argv[1];
+        ASM[0] = argv[2];
+        if (argc == 5)
+          ASM[1] = argv[3];
+        else
+          ASM[1] = NULL;
+      }
     else
-      ASM[1] = NULL;
+      { if (KEEP)
+          { fprintf(stderr,"%s: -k is an illegal option for this form of the command\n",Prog_Name);
+            exit (1);
+          }
+      }
     OUT = argv[argc-1];
   }
 
-  { char *troot;
-    char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
-                         ".dam", ".sam", ".bam", ".cram" };
-    char  command[5000];
-    int   i, j, len;
+  OUT = PathnRoot(OUT,".asmi");
 
-    troot = mktemp(template);
+  if (argc == 2)                     //  Keeper shortcut
 
-    READS = PathnRoot(READS,".ktab");
+      asm_plot(OUT,0,NULL,NULL,NULL,XDIM,YDIM,XREL,YREL,XMAX,YMAX,
+               PDF,ZGRAM,LINE,FILL,STACK,0);
 
-    KMER = check_table(Catenate(READS,".ktab","",""),0);
+  else
+    { char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
+                           ".dam", ".sam", ".bam", ".cram" };
+      char  command[5000];
+      char *ATABLE[2];
+      int   i, j, len;
 
-    for (i = 0; i < 2; i++)
-      { if (ASM[i] == NULL)
-          continue;
+      READS = PathnRoot(READS,".ktab");
 
-        for (j = 0; j < 10; j++)
-          { len = strlen(ASM[i]) - strlen(suffix[j]);
-            if (strcmp(ASM[i]+len,suffix[j]) == 0)
-              ASM[i][len] = '\0';
-          }
+      KMER = check_table(Catenate(READS,".ktab","",""),0);
 
-        if (VERBOSE)
-          fprintf(stderr,"\n  Making k-mer table for assembly %s\n",ASM[i]);
+      for (i = 0; i < 2; i++)
+        { if (ASM[i] == NULL)
+            continue;
 
-        sprintf(command,"FastK -k%d -T%d -P%s -t1 %s",KMER,NTHREADS,SORT_PATH,ASM[i]);
-        system(command);
-      }
+          ATABLE[i] = mktemp(template[i]);
 
-    if (VERBOSE)
-      fprintf(stderr,"\n  Making Venn histograms and plotting\n");
+          for (j = 0; j < 10; j++)
+            { len = strlen(ASM[i]) - strlen(suffix[j]);
+              if (strcmp(ASM[i]+len,suffix[j]) == 0)
+                ASM[i][len] = '\0';
+            }
 
-    asm_plot(OUT,ASM[0],ASM[1],READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,
-             PDF,ZGRAM,LINE,FILL,STACK,troot,NTHREADS);
+          if (VERBOSE)
+            fprintf(stderr,"\n  Making k-mer table for assembly %s\n",ASM[i]);
 
-    for (i = 0; i < 2; i++)
-      { if (ASM[i] == NULL)
-          continue;
-        sprintf(command,"Fastrm %s",ASM[i]);
-        system(command);
-      }
+          sprintf(command,"FastK -k%d -T%d -P%s -t1 %s -N%s",
+                          KMER,NTHREADS,SORT_PATH,ASM[i],ATABLE[i]);
+          SystemX(command);
+        }
 
-    free(READS);
-  }
+      if (VERBOSE)
+        fprintf(stderr,"\n  Making Venn histograms and plotting\n");
 
+      asm_plot(OUT,KEEP,ASM,ATABLE,READS,XDIM,YDIM,XREL,YREL,XMAX,YMAX,
+               PDF,ZGRAM,LINE,FILL,STACK,NTHREADS);
+
+      for (i = 0; i < 2; i++)
+        { if (ASM[i] == NULL)
+            continue;
+          sprintf(command,"Fastrm %s",ATABLE[i]);
+          SystemX(command);
+        }
+
+      free(READS);
+    }
+
+  free(OUT);
   Catenate(NULL,NULL,NULL,NULL);
   Numbered_Suffix(NULL,0,NULL);
   free(Prog_Name);

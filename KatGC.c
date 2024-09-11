@@ -439,7 +439,7 @@ int main(int argc, char *argv[])
         printf("%s\n",command);
         fflush(stdout);
 #endif
-        system(command);
+        SystemX(command);
       }
     if (FILL)
       { sprintf(capend," -t heat 2>/dev/null");
@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
         printf("%s\n",command);
         fflush(stdout);
 #endif
-        system(command);
+        SystemX(command);
       }
     if (BOTH)
       { sprintf(capend," -t combo 2>/dev/null");
@@ -455,13 +455,13 @@ int main(int argc, char *argv[])
         printf("%s\n",command);
         fflush(stdout);
 #endif
-        system(command);
+        SystemX(command);
       }
 
     //  Remove the temp files
 
     sprintf(command,"rm -f %s.kgc %s.R",troot,troot);
-    system(command);
+    SystemX(command);
   }
 
   free(SOURCE);

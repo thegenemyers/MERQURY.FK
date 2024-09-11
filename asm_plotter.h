@@ -14,9 +14,9 @@
 #include <dirent.h>
 #include <math.h>
 
-void asm_plot(char  *OUT, char  *ASM1, char *ASM2, char  *READS,
+void asm_plot(char  *OUT, int KEEP, char  **ASM, char **ATABLE, char  *RTABLE, 
               double XDIM, double YDIM,
               double XREL, double YREL,
               int    XMAX, int64  YMAX,
               int    PDF, int ZGRAM, int LINE, int FILL, int STACK,
-              char  *troot, int NTHREADS);
+              int NTHREADS);

@@ -31,6 +31,7 @@
 #undef  DEBUG_PLOIDY
 #undef  ANALYZE_PLOIDY
 
+#include "gene_core.h"
 #include "libfastk.h"
 #include "matrix.h"
 
@@ -38,7 +39,11 @@
 
 static char *Usage[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                          " [-vk] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]",
-                         " [-o<output>] [-e<int(4)>] <source>[.ktab]"
+                         " <source>[.ktab] <out>[.smu]"
+                       };
+
+static char *Usage2[] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
+                          " [-v] [-lfs] [-pdf] <out>[.smu]"
                        };
 
 static int VERBOSE;
@@ -51,7 +56,7 @@ static int64  CIDX;
 
 #endif
 
-static int ETHRESH;   //  Error threshold
+#define ETHRESH  3    //  Error trim threshold
 
 #define SMAX  1000    //  Max. value of CovA+CovB
 #define FMAX   500    //  Max. value of min(CovA,CovB)
@@ -1623,7 +1628,6 @@ int main(int argc, char *argv[])
   char        *input;
   char        *troot;
   int64      **PLOT;
-  int          bypass;
 
   char  *SORT_PATH;
   int    KEEP;
@@ -1645,8 +1649,6 @@ int main(int argc, char *argv[])
     XDIM = 6.0;
     YDIM = 4.5;
     PDF  = 0;
-    OUT  = NULL;
-    ETHRESH  = 4;
     NTHREADS = 4;
     SORT_PATH = "/tmp";
 
@@ -1657,18 +1659,8 @@ int main(int argc, char *argv[])
         { default:
             ARG_FLAGS("vklfs")
             break;
-          case 'e':
-            ARG_POSITIVE(ETHRESH,"Error-mer threshold")
-            break;
           case 'h':
             ARG_REAL(YDIM);
-            break;
-          case 'o':
-            if (OUT == NULL)
-              free(OUT);
-            OUT = Strdup(argv[i]+2,"Allocating name");
-            if (OUT == NULL)
-              exit (1);
             break;
           case 'p':
             if (strcmp("df",argv[i]+2) == 0)
@@ -1708,11 +1700,14 @@ int main(int argc, char *argv[])
 #ifdef SOLO_CHECK
     if (argc != 3)
 #else
-    if (argc != 2)
+    if (argc != 2 && argc != 3)
 #endif
       { fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage[0]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[1]);
         fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage[2]);
+        fprintf(stderr,"  or\n");
+        fprintf(stderr,"\nUsage: %s %s\n",Prog_Name,Usage2[0]);
+        fprintf(stderr,"       %*s %s\n",(int) strlen(Prog_Name),"",Usage2[1]);
         fprintf(stderr,"\n");
         fprintf(stderr,"      -w: width in inches of plots\n");
         fprintf(stderr,"      -h: height in inches of plots\n");
@@ -1724,9 +1719,6 @@ int main(int argc, char *argv[])
         fprintf(stderr,"\n");
         fprintf(stderr,"    -pdf: output .pdf (default is .png)\n");
         fprintf(stderr,"\n");
-        fprintf(stderr,"      -o: root name for output plots\n");
-        fprintf(stderr,"          default is root path of <asm> argument\n");
-        fprintf(stderr,"\n");
         fprintf(stderr,"      -e: count threshold below which k-mers are considered erroneous\n");
         fprintf(stderr,"      -v: verbose mode\n");
         fprintf(stderr,"      -k: keep het-mer table for re-use\n");
@@ -1735,40 +1727,51 @@ int main(int argc, char *argv[])
         exit (1);
       }
 
-    SRC = argv[1];
-    if (OUT == NULL)
-      OUT = Root(argv[1],".ktab");
-
-    troot = mktemp(template);
+    if (argc == 3)
+      SRC = argv[1];
+    else
+      { SRC = NULL;
+        if (KEEP)
+          { fprintf(stderr,"%s: -k is an illegal option for this form of the command\n",Prog_Name);
+            exit (1);
+          }
+      }
+    OUT = argv[argc-1];
   }
 
   //  If appropriately named het-mer table found then ask if reuse
 
-  { FILE *f;
-    int   a;
+  troot = mktemp(template);
 
-    bypass = 0;
-    f = fopen(Catenate(OUT,".smu","",""),"r");
-    if (f != NULL)
-      { fprintf(stdout,"\n  Found het-table %s.smu, use it? ",OUT);
-        fflush(stdout);
-        while ((a = getc(stdin)) != '\n')
-          if (a == 'y' || a == 'Y')
-            bypass = 1;
+  OUT = PathnRoot(OUT,".smu");
 
-        if (bypass)
-          { PLOT    = Malloc(sizeof(int64 *)*(SMAX+1),"Allocating thread working memory");
-            PLOT[0] = Malloc(sizeof(int64)*(SMAX+1)*(FMAX+1),"Allocating plot");
-            for (a = 1; a <= SMAX; a++)
-              PLOT[a] = PLOT[a-1] + (FMAX+1);
-            fread(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
-          }
+  if (SRC == NULL)
+    { FILE *f;
+      int   a;
 
-        fclose(f);
-      }
+      f = fopen(Catenate(OUT,".smu","",""),"r");
+      if (f == NULL)
+        { fprintf(stderr,"%s: Could not find and open %s.smu\n",Prog_Name,OUT);
+          exit (1);
+        }
+
+      fread(&KMER,sizeof(int),1,f);
+      PLOT    = Malloc(sizeof(int64 *)*(SMAX+1),"Allocating thread working memory");
+      PLOT[0] = Malloc(sizeof(int64)*(SMAX+1)*(FMAX+1),"Allocating plot");
+      for (a = 1; a <= SMAX; a++)
+        PLOT[a] = PLOT[a-1] + (FMAX+1);
+      fread(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
+      fclose(f);
+
+      if (VERBOSE)
+        { fprintf(stderr,"\n  Table imported, plotting\n");
+          fflush(stderr);
+        }
+
+      goto skip_build;
   }
 
-  //  Open input table and see if it needs conditioning
+  //  Else: Open input table and see if it needs conditioning
 
   { char *command;
     char *tname;
@@ -1788,9 +1791,6 @@ int main(int argc, char *argv[])
     KMER  = T->kmer;
     KBYTE = T->kbyte;
     TBYTE = T->tbyte;
-
-    if (bypass)
-      goto skip_build;
 
     examine_table(T,&trim,&symm);
 
@@ -1820,10 +1820,7 @@ int main(int argc, char *argv[])
           }
 
         sprintf(command,"Logex -T%d '%s.trim=A[%d-]' %s",NTHREADS,troot,ETHRESH,tname);
-        if (system(command) != 0)
-          { fprintf(stderr,"%s: Something went wrong with command:\n    %s\n",Prog_Name,command);
-            exit (1);
-          }
+        SystemX(command);
 
         sprintf(tname,"%s.trim",troot);
       }
@@ -1841,18 +1838,11 @@ int main(int argc, char *argv[])
 
         sprintf(command,"Symmex -T%d -P%s %s %s.symx",NTHREADS,SORT_PATH,tname,troot);
 
-        if (system(command) != 0)
-          { fprintf(stderr,"%s: Something went wrong with command:\n    %s\n",Prog_Name,command);
-            exit (1);
-          }
+        SystemX(command);
 
         if (!trim)
           { sprintf(command,"Fastrm %s.trim",troot);
-            if (system(command) != 0)
-              { fprintf(stderr,"%s: Something went wrong with command:\n    %s\n",
-                               Prog_Name,command);
-                exit (1);
-              }
+            SystemX(command);
           }
 
         sprintf(tname,"%s.symx",troot);
@@ -2031,14 +2021,39 @@ int main(int argc, char *argv[])
           if (command == NULL)
             exit (1);
           sprintf(command,"Fastrm %s",input);
-          if (system(command) != 0)
-            { fprintf(stderr,"%s: Something went wrong with command:\n    %s\n",Prog_Name,command);
-              exit (1);
-            }
+          SystemX(command);
           free(command);
           free(input);
         }
     }
+
+    if (KEEP)
+      { FILE  *f;
+#ifdef KAMIL
+        int    a, i;
+#endif
+
+        f = fopen(Catenate(OUT,".smu","",""),"w");
+#ifdef KAMIL
+        fprintf(f,
+           "// %dx%d matrix, the i'th number in the j'th row give the number of hetmer pairs (a,b)",
+           SMAX,FMAX);
+        fprintf(f,
+           "//                     s.t. count(a)+count(b) = j+1 and min(count(a),count(b)) = i+1.");
+        for (a = 0; a <= SMAX; a++)
+          { for (i = 0; i < FMAX; i++)
+              fprintf(f," %lld",PLOT[a][i]);
+            fprintf(f,"\n");
+          }
+        fclose(f);
+
+        exit (0);
+#else
+        fwrite(&KMER,sizeof(int),1,f);
+        fwrite(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
+        fclose(f);
+#endif
+      }
   }
 
 #ifdef SOLO_CHECK
@@ -2054,36 +2069,6 @@ int main(int argc, char *argv[])
 
 skip_build:
 
-#ifdef KAMIL
-
-  if (KEEP && !bypass)
-    { FILE  *f;
-      int    a, i;
-
-      f = fopen(Catenate(OUT,".smu","",""),"w");
-      fprintf(f,
-         "// %dx%d matrix, the i'th number in the j'th row give the number of hetmer pairs (a,b)",
-         SMAX,FMAX);
-      fprintf(f,
-         "//                     s.t. count(a)+count(b) = j+1 and min(count(a),count(b)) = i+1.");
-      for (a = 0; a <= SMAX; a++)
-        { for (i = 0; i < FMAX; i++)
-            fprintf(f," %lld",PLOT[a][i]);
-          fprintf(f,"\n");
-        }
-      fclose(f);
-    }
-
-#else
-
-  if (KEEP && !bypass)
-    { FILE  *f;
-
-      f = fopen(Catenate(OUT,".smu","",""),"w");
-      fwrite(PLOT[0],sizeof(int64),(SMAX+1)*(FMAX+1),f);
-      fclose(f);
-    }
-
   //  Create smudge table
 
   { int    i, j, a;
@@ -2091,22 +2076,23 @@ skip_build:
     int64  low, hgh;
     int    nov, smax, wide;
     int64  inter[SMAX];
-    int64 *row, v, vmax;
+    int64 *row, v, vmax, vmin;
     double fact;
     FILE  *f;
     char  *command, *capend;
     int64  rsum[SMAX];
     int64  cmax;
     int    cwch, cover, ploidy;
+    int    ethresh;
 
     //  Begin table output
 
     f = fopen(Catenate(troot,".smu","",""),"w");
 #ifdef DEBUG
     if (f == NULL)
-      printf("Could not open %s\n",Catenate(troot,".smu","",""));
+      printf("Could not open %s.smu\n",troot);
     else
-      printf("Writing %s\n",Catenate(troot,".smu","",""));
+      printf("Writing %s.smu\n",troot);
     fflush(stdout);
 #endif
     fprintf(f,"KF1\tKF2\tCount\n");
@@ -2114,7 +2100,24 @@ skip_build:
     //  Stretch rows to fractional axis in place, scale to preserve row sums!
     //    Row goes from [0,FMAX) to [0,PIXEL)
 
+    vmin = 0x7fffffffffffffffll;
     for (i = 2*ETHRESH; i < SMAX; i++)
+      { row = PLOT[i];
+        v = 0;
+        for (a = ETHRESH; a <= i/2; a++)
+          v += row[a];
+        if (v > vmin)
+          break;
+        vmin = v;
+      }
+    ethresh = (i-1)/2;
+
+    if (VERBOSE)
+      { fprintf(stderr,"\n  Trimming k-mers with count < %d\n",ethresh);
+        fflush(stderr);
+      }
+
+    for (i = 2*ethresh; i < SMAX; i++)
       { int64  old, new;
         double imp;
 
@@ -2124,7 +2127,7 @@ skip_build:
           inter[p] = -1;
 
         old = 0;
-        for (a = ETHRESH; a <= i/2; a++)
+        for (a = ethresh; a <= i/2; a++)
           { if (i%2 == 0)
               p = (PIXEL2*a)/i;
             else
@@ -2183,7 +2186,7 @@ skip_build:
     //  Determine A+B scaling and max in wide/smax
 
     vmax = 0;
-    for (i = 2*ETHRESH; i < SMAX; i++)
+    for (i = 2*ethresh; i < SMAX; i++)
       if (vmax < rsum[i])
         { vmax = rsum[i];
           smax = i;
@@ -2198,9 +2201,9 @@ skip_build:
     //  reduce A+B resolution by scaling factor and output array
 
     a = wide;
-    while (a <= 2*ETHRESH)
+    while (a <= 2*ethresh)
       a += wide;
-    for (i = 2*ETHRESH; i < smax; a += wide)
+    for (i = 2*ethresh; i < smax; a += wide)
       { fact = wide/(a-i);
         for (p = 0; p < PIXELS; p++)
           { v = -1;
@@ -2227,7 +2230,7 @@ skip_build:
 
     cmax = 0;
     cwch = -1;
-    for (i = (2*ETHRESH)/wide; i < PIXELS; i++)
+    for (i = (2*ethresh)/wide; i < PIXELS; i++)
       { v = 0;
         for (p = 0; p < PIXELS; p++)
           v += PLOT[i][p];
@@ -2257,9 +2260,9 @@ skip_build:
     f = fopen(Catenate(troot,".sma","",""),"w");
 #ifdef DEBUG
     if (f == NULL)
-      printf("Could not open %s\n",Catenate(troot,".smu","",""));
+      printf("Could not open %s.smu\n",troot);
     else
-      printf("Writing %s\n",Catenate(troot,".smu","",""));
+      printf("Writing %s.smu\n",troot);
     fflush(stdout);
 #endif
     fprintf(f,"Name\tx\ty\tAmount\tCover\tPloidy\n");
@@ -2276,9 +2279,9 @@ skip_build:
     f = fopen(Catenate(troot,".R","",""),"w");
 #ifdef DEBUG
     if (f == NULL)
-      printf("Could not open %s\n",Catenate(troot,".R","",""));
+      printf("Could not open %s.R\n",troot);
     else
-      printf("Generating %s\n",Catenate(troot,".R","",""));
+      printf("Generating %s.R\n");
     fflush(stdout);
 #endif
     fwrite(smu_plot,strlen(smu_plot),1,f);
@@ -2299,7 +2302,7 @@ skip_build:
         printf("%s\n",command);
         fflush(stdout);
 #endif
-        system(command);
+        SystemX(command);
       }
     if (FILL)
       { sprintf(capend," -t heat 2>/dev/null");
@@ -2307,7 +2310,7 @@ skip_build:
         printf("%s\n",command);
         fflush(stdout);
 #endif
-        system(command);
+        SystemX(command);
       }
     if (BOTH)
       { sprintf(capend," -t combo 2>/dev/null");
@@ -2315,18 +2318,13 @@ skip_build:
         printf("%s\n",command);
         fflush(stdout);
 #endif
-        system(command);
+        SystemX(command);
       }
 
     //  Remove the temp files
 
     sprintf(command,"rm -f %s.smu %s.sma %s.R",troot,troot,troot);
-    system(command);
-
-    if ( ! KEEP)
-      { sprintf(command,"rm -f %s.smu",OUT);
-        system(command);
-      }
+    SystemX(command);
 
     free(command);
 
@@ -2345,8 +2343,6 @@ skip_build:
         fprintf(stderr,"\n");
       }
   }
-
-#endif  //  KAMIL
 
   free(OUT);
 
