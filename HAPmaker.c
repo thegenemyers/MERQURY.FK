@@ -173,8 +173,8 @@ int main(int argc, char *argv[])
                     NTHREADS,MAT,MSOLID,PAT,PSOLID,MATI,PATI);
     SystemX(command);
 
-    // sprintf(command,"Fastrm %s %s %s %s",MATS,PATS,MATI,PATI);
-    // SystemX(command);
+    sprintf(command,"Fastrm %s %s %s %s",MATS,PATS,MATI,PATI);
+    SystemX(command);
   }
 
   free(CHILD);
