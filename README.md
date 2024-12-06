@@ -264,29 +264,9 @@ Also the -k option is not provided as the compute time prefacing the plot is rea
 <a name="PloidyPlot"></a>
 
 ```
-8. PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
-              [-vk] [-lfs] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
-              <source>[.ktab] <out>[.smu]
-or
-
-   PloidyPlot [-w<double(6.0)>] [-h<double(4.5)>]
-              [-vk] [-lfs] [-pdf] <out>[.smu]
+8. PloidyPlot : superceded by latest version of SmudgePlot
 ```
 
-This is an improved version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)
-that produces "cleaner" smudges by avoiding false het-mer signals.  In addition to displaying smudges the program tries to estimate the ploidy of the genome albeit this
-is not guaranteed to always be correct.
-
-Almost all the options (-w, -h, -v, -lfs, -pdf, -T) control the output file name and type, display, and number of threads used exactly as described for [CNplot](#CNplot).
-
-Any k-mer with a count of less than -e in the input FastK table \<source> is considered
-an error in the analysis.  The analysis is ultimately run over a *symmetric** k-mer table of all k-mers with count 4 or more.  If the supplied table does not meet these specifications,
-then the program takes additional compute time to make it so, but if in a preprocessing
-step, you use [Logex](https://github.com/thegenemyers/FASTK/#Logex) and [Symmex](https://github.com/thegenemyers/FASTK/#Symmex) to make the table conform to the internal
-requirements than this time is saved.  If PloidyPlot is forced to make a trimmed, symmetric table for an input, then the call to Symmex will use the temp directory specified by the -P option (if not the default "/tmp").
-
-Even if the input table is symmetric and trimmed, the bulk of the
-time taken by PloidyPlot is in accumulating count statistics of het-mer pairs.  If the
--k option is given then the table of het-mer pair statistics is **k**ept, and stored
-in a file named `<out>.smu`.  This saved table can then be given as the sole required
-argument to PloidyPlot in subsequent calls, so that the time intensive counting step is avoided.
+PloidyPlot has been superceded by the latest version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)
+that now incorporates the performance and improved het-pair statistics that were
+in PloidyPlot. 
