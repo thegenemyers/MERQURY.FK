@@ -947,10 +947,19 @@ Kmer_Stream *Open_Kmer_Stream(char *name)
   S->part  = 1;
 
   More_Kmer_Stream(S);
+
   S->cidx  = 0;
-  S->cpre  = 0;
-  while (S->index[S->cpre] <= 0)
-    S->cpre += 1;
+
+  if (S->cidx >= S->nels)
+    { S->csuf = NULL;
+      S->cpre = S->ixlen;
+      S->part = S->nthr+1;
+    }
+  else
+    { S->cpre  = 0;
+      while (S->index[S->cpre] <= 0)
+        S->cpre += 1;
+    }
 
   return ((Kmer_Stream *) S);
 }
@@ -970,10 +979,11 @@ Kmer_Stream *Clone_Kmer_Stream(Kmer_Stream *O)
   S->name  = Malloc(S->nlen+20,"Allocating k-mer buffer\n");
   if (S->table == NULL || S->name == NULL)
     exit (1);
+  strncpy(S->name,STREAM(O)->name,S->nlen);
 
   //  Set position to beginning
 
-  sprintf(S->name,"%s%d",STREAM(O)->name,1);
+  sprintf(S->name+S->nlen,"%d",1);
   copn = open(S->name,O_RDONLY);
   lseek(copn,sizeof(int)+sizeof(int64),SEEK_SET);
 
@@ -982,9 +992,17 @@ Kmer_Stream *Clone_Kmer_Stream(Kmer_Stream *O)
 
   More_Kmer_Stream(S);
   S->cidx  = 0;
-  S->cpre  = 0;
-  while (S->index[S->cpre] <= 0)
-    S->cpre += 1;
+
+  if (S->cidx >= S->nels)
+    { S->csuf = NULL;
+      S->cpre = S->ixlen;
+      S->part = S->nthr+1;
+    }
+  else
+    { S->cpre  = 0;
+      while (S->index[S->cpre] <= 0)
+        S->cpre += 1;
+    }
 
   return ((Kmer_Stream *) S);
 }
@@ -1003,6 +1021,168 @@ void Free_Kmer_Stream(Kmer_Stream *_S)
     close(S->copn);
   free(S);
 }
+
+
+/****************************************************************************************
+ *
+ *  Hidden, for 1-code production useful to know the size of the largest prefix bucket
+ *
+ *****************************************************************************************/
+
+int Max_Bucket(Kmer_Stream *_S)
+{ _Kmer_Stream *S = STREAM(_S);
+  int64  pidx, *curr;
+  int    i, s, max;
+
+  pidx = 0;
+  curr = S->index;
+  max  = 0;
+  for (i = 0; i < S->ixlen; i++)
+    { s = curr[i] - pidx;
+      if (s > max)
+        max = s;
+      pidx = curr[i];
+    }
+  return (max);
+}
+
+
+/****************************************************************************************
+ *
+ *  Hidden, specialized version of Open, Clone, & Free used by Fastmerge
+ *
+ *****************************************************************************************/
+
+int Open_Kmer_Cache(Kmer_Stream *_S, int64 bidx, int64 eidx, int bpre, int epre,
+                    char *where, uint8 *buffer, int buflen)
+{ _Kmer_Stream *S = STREAM(_S);
+  int   f, g;
+  int   p, len;
+  int64 beps, leps;
+  int64 beg, end;
+  char *name, *r;
+
+  memmove(S->index,S->index+bpre,((epre-bpre)+1)*sizeof(int64));
+  S->index = Realloc(S->index,((epre-bpre)+1)*sizeof(int64),"Reallocating prefix index");
+  S->index -= bpre;
+
+  if (S->part <= S->nthr)
+    close(S->copn);
+
+  name = Malloc(S->nlen+strlen(where)+10,"Reallocing table name");
+  if (name == NULL)
+    exit (1);
+
+  r = rindex(S->name,'/');
+  S->name[S->nlen] = '\0';
+  sprintf(name,"%s/%scache",where,r+2);
+  S->name[S->nlen] = '.';
+
+  g = open(name,O_CREAT|O_TRUNC|O_RDWR,S_IRWXU);
+  if (g < 0)
+    return (1);
+
+  p = 0;
+  while (bidx >= S->neps[p])
+    p += 1;
+
+  beps = bidx;
+  if (p == 0)
+    leps = 0;
+  else
+    leps = S->neps[p-1];
+
+  while (eidx > leps)
+    { sprintf(S->name+S->nlen,"%d",p+1);
+      f = open(S->name,O_RDONLY);
+      lseek(f,sizeof(int)+sizeof(int64),SEEK_SET);
+
+      if (eidx > S->neps[p])
+        end = S->neps[p]-leps;
+      else
+        end = eidx-leps;
+      beg = beps - leps;
+
+      end *= S->pbyte;
+      beg *= S->pbyte;
+      if (beg > 0)
+        lseek(f,beg,SEEK_CUR);
+
+      while (beg < end)
+        { if (beg+buflen > end)
+            len = end-beg;
+          else
+            len = buflen;
+          read(f,buffer,len);
+          if (write(g,buffer,len) < 0)
+            return (1);
+          beg += len;
+        }
+
+      close(f);
+
+      beps = leps = S->neps[p++];
+    }
+
+  free(S->name);
+  S->name = name;
+
+  lseek(g,0,SEEK_SET);
+  S->copn = g;
+  S->part = 0;
+  S->cidx = bidx;
+  S->cpre = bpre;
+  S->nels = eidx;
+  More_Kmer_Stream(S);
+
+  return (0);
+}
+
+Kmer_Stream *Clone_Kmer_Cache(Kmer_Stream *O, int64 fidx, int64 bidx, int bpre)
+{ _Kmer_Stream *S;
+  int copn;
+
+  S = Malloc(sizeof(_Kmer_Stream),"Allocating table record");
+  if (S == NULL)
+    exit (1);
+
+  *S = *STREAM(O);
+  S->clone = 1;
+
+  S->table = Malloc(STREAM_BLOCK*S->pbyte,"Allocating k-mer buffer\n");
+
+  //  Set position to beginning
+
+  copn = open(S->name,O_RDONLY);
+  lseek(copn,(bidx-fidx)*S->pbyte,SEEK_SET);
+
+  S->copn  = copn;
+  S->cidx  = bidx;
+  S->cpre  = bpre;
+
+  More_Kmer_Stream(S);
+
+  return ((Kmer_Stream *) S);
+}
+
+void Free_Kmer_Cache(Kmer_Stream *_S, int bpre)
+{ _Kmer_Stream *S = STREAM(_S);
+
+  if (!S->clone)
+    { free(S->neps);
+      free(S->index + bpre);
+      free(S->inver);
+    }
+  free(S->table);
+  if (S->copn >= 0)
+    close(S->copn);
+  if (!S->clone)
+    { unlink(S->name);
+      free(S->name);
+    }
+  free(S);
+}
+
 
 /****************************************************************************************
  *
@@ -1109,7 +1289,7 @@ uint8 *Current_Entry(Kmer_Stream *_S, uint8 *ent)
   int    pbyte = S->pbyte;
 
   if (ent == NULL)
-    { ent = (uint8 *) Malloc(S->pbyte,"Reallocating k-mer buffer");
+    { ent = (uint8 *) Malloc(S->tbyte,"Reallocating k-mer buffer");
       if (ent == NULL)
         exit (1);
       if (S->csuf == NULL)
@@ -1161,7 +1341,7 @@ inline void GoTo_Kmer_Index(Kmer_Stream *_S, int64 i)
       S->cpre = S->ixlen;
       S->part = S->nthr+1;
       return;
-    } 
+    }
 
   p = S->inver[i>>S->shift];
   while (index[p] <= i)
