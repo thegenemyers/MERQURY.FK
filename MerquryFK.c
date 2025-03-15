@@ -916,7 +916,7 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Computing completeness stats for assembly %s\n",AROOT[0]);
 
-        sprintf(command,"Logex -H1 -T%d '%s.0 = A-B[%d-]' %s %s",
+        sprintf(command,"Logex -H1 -T%d '%s.0 = A&.B[%d-]' %s %s",
                         NTHREADS,troot,SOLID_THRESH,ATAB[0],READS);
         SystemX(command);
       
@@ -925,8 +925,8 @@ int main(int argc, char *argv[])
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[0],(SOLID_COUNT-H->hist[1]),SOLID_COUNT,
-                                                  (SOLID_COUNT-H->hist[1])/(.01*SOLID_COUNT));
+        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[0],H->hist[1],SOLID_COUNT,
+                                                  H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         fclose(cps);
