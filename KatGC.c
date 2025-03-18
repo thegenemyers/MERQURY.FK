@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #undef   DEBUG
 #undef   DEBUG_THREADS
@@ -137,7 +138,7 @@ static void *merge_thread(void *args)
  *
  *****************************************************************************************/
 
-static char template[15] = "._KGC.XXXX";
+static char template[20] = "._KGC.XXXXXX";
 
 static int check_table(char *name, int lmer)
 { int   kmer;
