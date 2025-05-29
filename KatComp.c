@@ -467,7 +467,7 @@ int main(int argc, char *argv[])
 
     //  Output matrix to temp file
 
-    troot = mktemp(template);
+    troot = MyTemp(template);
 
     f = fopen(Catenate(troot,".kx","",""),"w");
 #ifdef DEBUG

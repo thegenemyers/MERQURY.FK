@@ -42,7 +42,7 @@ void cn_plot(char  *OUT, int KEEP, char *ATABLE, char *RTABLE,
   char      *Label[] = { "read-only", "1", "2", "3", "4", ">4" };
   FILE      *f;
 
-  troot = mktemp(template);
+  troot = MyTemp(template);
 
   if (NTHREADS == 0)                                 //  Short cut
     { f = fopen(Catenate(OUT,".cni","",""),"r");

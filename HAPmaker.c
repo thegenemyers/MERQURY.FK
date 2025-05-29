@@ -135,8 +135,8 @@ int main(int argc, char *argv[])
     if (VERBOSE)
       fprintf(stderr,"\n  Computing tables of specific k-mers\n");
 
-    MATS = mktemp(templateSmat);
-    PATS = mktemp(templateSpat);
+    MATS = MyTemp(templateSmat);
+    PATS = MyTemp(templateSpat);
 
     sprintf(command,"Logex -T%d -h '%s = A-B' '%s = B-A' %s %s",
                     NTHREADS,MATS,PATS,MAT,PAT);
@@ -149,8 +149,8 @@ int main(int argc, char *argv[])
       fprintf(stderr,"\n  Specific k-mers reliability cutoffs are %d(mat) & %d(pat)\n",
                      MSOLID,PSOLID);
 
-    MATI = mktemp(templateImat);
-    PATI = mktemp(templateIpat);
+    MATI = MyTemp(templateImat);
+    PATI = MyTemp(templateIpat);
 
     if (VERBOSE)
       fprintf(stderr,"\n  Computing tables of specific, inherited k-mers\n");

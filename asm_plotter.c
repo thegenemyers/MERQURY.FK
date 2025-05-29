@@ -50,7 +50,7 @@ void asm_plot(char  *OUT, int KEEP, char  **ASM, char **ATABLE, char *RTABLE,
   char      *Label[] = { "read-only", "", "", "shared" };
   FILE      *f;
 
-  troot = mktemp(template);
+  troot = MyTemp(template);
 
   if (NTHREADS == 0)                                 //  Short cut
     { int len;

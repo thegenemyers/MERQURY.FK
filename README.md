@@ -14,6 +14,10 @@
   - [KatGC](#KatGC)
   - [PloidyPlot](#PloidyPlot)
 
+- [Setup Notes](#setup)
+
+<a name="introduction"></a>
+
 ## Introduction
 
 The original [Merqury](https://github.com/marbl/merqury) is a collection of R, Java, and shell scripts for producing k-mer analysis plots of genomic sequence data and assemblies with **meryl** as its core k-mer counter infra-structure.
@@ -112,7 +116,7 @@ plots will be produced again under control of the parameters given.  This saves 
 wait for the plotting data to have to be computed again, and permits one to repeatedly
 plot until they are satisfied with the size, scaling, and form.
 
-The use is responsible for deleting \<out\>.cni when desired.
+The user is responsible for deleting \<out\>.cni when desired.
 
 <br>
 
@@ -269,4 +273,17 @@ Also the -k option is not provided as the compute time prefacing the plot is rea
 
 PloidyPlot has been superceded by the latest version of [SmudgePlot](https://github.com/KamilSJaron/smudgeplot)
 that now incorporates the performance and improved het-pair statistics that were
-in PloidyPlot. 
+in PloidyPlot.
+
+<a name="setup"></a>
+
+# Setup Notes
+
+Making the program above should be as simple as saying "make" at the command line while in the directory where you've placed the package.  "make install" will place a copy of all the binaries at ```DEST_DIR``` which is set to ```~/bin``` but you can change it on the 1st line of the Makefile.
+
+The real reason for this note, is that many of the commands invoke R in order to produce plots as .png or .pdf files, and this does create undesirable dependencies in that certain R packages must be present or the commands will fail (silently at the moment but I hope to fix that).  The packages required are:
+
+* argparse
+* ggplot2
+* scales
+* viridis

@@ -1,6 +1,6 @@
 /********************************************************************************************
  *
- *  Refactoring of Merqury CN-spectra script as a command line tool using FastK
+ *  Refactoring of Merqury scripts as a single command line tool using FastK
  *
  *  Author:  Gene Myers
  *  Date  :  March, 2021
@@ -483,7 +483,7 @@ static int phase_blocks(char *aroot, char *mroot, char *proot,
                       BTOT += len;
                       if (len > BMAX)
                         BMAX = len;
-                      else if (len < BMIN)
+                      if (len < BMIN)
                         BMIN = len;
                     }
                   NBLK += mtop;
@@ -743,7 +743,7 @@ int main(int argc, char *argv[])
     { char *suffix[10] = { ".gz", ".fa", ".fq", ".fasta", ".fastq", ".db",
                            ".dam", ".sam", ".bam", ".cram" };
 
-      troot = mktemp(template);
+      troot = MyTemp(template);
 
       READS = PathnRoot(READS,".ktab");
       RROOT = Root(READS,"");
@@ -858,8 +858,8 @@ int main(int argc, char *argv[])
 
           //  Create assembly tables and profiles
 
-          ATAB[i] = mktemp(templateA[i]);
-          APRF[i] = mktemp(templateR[i]);
+          ATAB[i] = MyTemp(templateA[i]);
+          APRF[i] = MyTemp(templateR[i]);
 
           sprintf(command,"FastK -k%d -T%d -P%s -t1 -p %s -N%s",
                           KMER,NTHREADS,SORT_PATH,A,ATAB[i]); 
@@ -1117,8 +1117,8 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Producing relative profiles for phasing block calculation on %s\n",R);
 
-        MPRF[i] = mktemp(templateM[i]);
-        PPRF[i] = mktemp(templateP[i]);
+        MPRF[i] = MyTemp(templateM[i]);
+        PPRF[i] = MyTemp(templateP[i]);
 
         sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s",
                         NTHREADS,SORT_PATH,KMER,MAT,A,MPRF[i]);
@@ -1129,7 +1129,7 @@ int main(int argc, char *argv[])
         SystemX(command);
 
         if (VERBOSE)
-          fprintf(stderr,"\n Computing phasing blocks for assemlby %s\n",R);
+          fprintf(stderr,"\n Computing phasing blocks for assembly %s\n",R);
 
         do_scaffs = phase_blocks(R, MROOT, PROOT, APRF[i], MPRF[i], PPRF[i], OUT, troot);
 

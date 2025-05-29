@@ -16,6 +16,11 @@
 
 char *Prog_Name;
 
+char *MyTemp(char *template)
+{ close(mkstemp(template));
+  return (template);
+}
+
 void SystemX(char *command)
 { if (system(command) != 0)
     { fprintf(stderr,"%s: Command '%s' failed\n",Prog_Name,command);

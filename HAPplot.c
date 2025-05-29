@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     int    flags[128];
     char  *eptr;
 
-    ARG_INIT("HAPpLot");
+    ARG_INIT("HAPplot");
 
     XDIM = 6.0;
     YDIM = 4.5;
@@ -194,9 +194,9 @@ int main(int argc, char *argv[])
         { if (ASM[i] == NULL)
             continue;
 
-          APROF[i] = mktemp(templateA[i]);
-          MPROF[i] = mktemp(templateM[i]);
-          PPROF[i] = mktemp(templateP[i]);
+          APROF[i] = MyTemp(templateA[i]);
+          MPROF[i] = MyTemp(templateM[i]);
+          PPROF[i] = MyTemp(templateP[i]);
 
           for (j = 0; j < 10; j++)
             { len = strlen(ASM[i]) - strlen(suffix[j]);

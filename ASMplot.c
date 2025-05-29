@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
         { if (ASM[i] == NULL)
             continue;
 
-          ATABLE[i] = mktemp(template[i]);
+          ATABLE[i] = MyTemp(template[i]);
 
           for (j = 0; j < 10; j++)
             { len = strlen(ASM[i]) - strlen(suffix[j]);

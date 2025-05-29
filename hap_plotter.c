@@ -40,7 +40,7 @@ void hap_plot(char  *OUT, int KEEP, char *MAT, char *PAT, char **ASM,
   int            i, c, x;
   FILE          *f;
 
-  troot = mktemp(template);
+  troot = MyTemp(template);
 
   if (ASM == NULL)     //  Short cut
     { f = fopen(Catenate(OUT,".hpi","",""),"r");

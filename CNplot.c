@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
       int   j, len;
 
       READS  = PathnRoot(READS,".ktab");
-      ATABLE = mktemp(template);
+      ATABLE = MyTemp(template);
 
       KMER = check_table(Catenate(READS,".ktab","",""),0);
 
