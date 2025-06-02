@@ -18,6 +18,7 @@ char *Prog_Name;
 
 char *MyTemp(char *template)
 { close(mkstemp(template));
+  unlink(template);
   return (template);
 }
 
