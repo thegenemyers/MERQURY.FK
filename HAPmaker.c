@@ -57,7 +57,7 @@ static int reliable_cutoff(char *input)
     int64 *cvec = hist->hist;
     int    k;
 
-    for (k = low+1; cvec[k] < cvec[k-1]; k++)
+    for (k = low+1; cvec[k] <= cvec[k-1]; k++)
       if (k >= high)
         break;
     thresh = k;
