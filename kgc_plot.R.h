@@ -17,7 +17,14 @@ parser$add_argument(\"-s\", \"--source\", type=\"character\", help=\"source .kta
 args <- parser$parse_args()  \n\
   \n\
 fancy_scientific <- function(d) {  \n\
-  if (d[2] > 10000000) {  \n\
+  if (is.na(d[2])) {  \n\
+    for (i in 1:length(d)) {  \n\
+      if (is.na(d[i])) {  \n\
+        next  \n\
+      }  \n\
+      d[i] <- as.character(as.integer(d[i]))  \n\
+    }  \n\
+  } else if (d[2] > 10000000) {  \n\
     for (i in 1:length(d)) {  \n\
       if (is.na(d[i])) {  \n\
         next  \n\
