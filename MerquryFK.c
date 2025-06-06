@@ -31,7 +31,7 @@ static int ANCHOR_LENGTH  = 20000;
 
 static char *Usage[5] = { " [-w<double(6.0)>] [-h<double(4.5)>]",
                           " [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]",
-                          " [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]",
+                          " [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir($TMPDIR)>]",
                           " <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]",
                           " <asm1:dna> [<asm2:dna>] <out>"
                         };
@@ -603,7 +603,9 @@ int main(int argc, char *argv[])
     YMAX = 0;
     PDF  = 0;
     NTHREADS = 4;
-    SORT_PATH = "/tmp";
+    SORT_PATH   = getenv("TMPDIR");
+    if (SORT_PATH == NULL)
+      SORT_PATH = "/tmp";
 
     j = 1;
     for (i = 1; i < argc; i++)

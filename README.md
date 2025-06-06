@@ -71,7 +71,7 @@ reporting to the standard error.
 ```
 2. CNplot [-w<double(6.0)>] [-h<double(4.5)>]
           [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-          [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
+          [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir($TMPDIR)>]
           <reads>[.ktab] <asm:dna> <out>[.cni]
 or
           
@@ -106,8 +106,9 @@ If the -z option is set, then CNplot plots at 0, the # of k-mers in \<asm> - \<r
 broken down into those that are unique or those that are not.
 
 The -T option can be used to control the number of threads used, -v turns on verbose
-reporting to the standard error, and -P is passed through to the calls to FastK so you can
-specify the temp directory if needed.
+reporting to the standard error, and -P is passed through to the calls to FastK so you can ouspecify the temp directory if needed.
+By default -P is the value of the system variable $TMPDIR, or should this be undefined, then
+`/tmp`.
 
 If the -k option is set then in addition to producing the requested .png or .pdf files with
 root path \<out\>, CNplot also creates \<out\>.cni that contains the processed data that is given to an R-script to produce the plots.  This allows
@@ -125,7 +126,7 @@ The user is responsible for deleting \<out\>.cni when desired.
 ```
 3. ASMplot [-w<double(6.0)>] [-h<double(4.5)>]
            [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-           [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
+           [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir($TMPDIR)>]
            <reads>[.ktab] <asm1:dna> [<asm2:dna>] <out>[.asmi]
 or
 
@@ -147,7 +148,7 @@ The -k option works similarly to CNplot save that the short-cut file is \<out\>.
 <a name="HAPplot"></a>
 
 ```
-4. HAPplot [-vk] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>] [-P<dir(/tmp)>]
+4. HAPplot [-vk] [-w<double(6.0)>] [-h<double(4.5)>] [-pdf] [-T<int(4)>] [-P<dir($TMPDIR)>]
            <mat>[.hap[.ktab]] <pat>[.hap[.ktab] <asm1:dna> [<asm2:dna>] <out>[.hpi]
 or
            
@@ -170,7 +171,7 @@ The -k option works similarly to CNplot save that the short-cut file is \<out\>.
 ```
 5. MerquryFK [-w<double(6.0)>] [-h<double(4.5)>]
              [-[xX]<number(x2.1)>] [-[yY]<number(y1.1)>]
-             [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir(/tmp)>]
+             [-vk] [-lfs] [-pdf] [-z] [-T<int(4)>] [-P<dir($TMPDIR)>]
                 <read>[.ktab] [ <mat>[.hap[.ktab]] <pat>[.hap[.ktab]] ]
                 <asm1:dna> [<asm2:dna>] <out>
 ```
