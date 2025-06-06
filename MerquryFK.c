@@ -1064,25 +1064,22 @@ int main(int argc, char *argv[])
           fprintf(stderr,"\n Determining hap-mer completeness of assembly %s\n",R);
 
         sprintf(command,
-                "Logex -H1 -T%d '%s.M = A&.B' '%s.P=A&.C' '%s.0=B' '%s.1=C' %s %s %s",
-                NTHREADS,troot,troot,troot,troot,ATAB[i],MAT,PAT);
+                "Logex -H1 -T%d '%s.M = A&.B' '%s.P=A&.C' '%s.D=A' %s %s %s",
+                NTHREADS,troot,troot,troot,ATAB[i],MAT,PAT);
         SystemX(command);
 
-        sprintf(Hname,"%s.M",troot);   //  unique or instances?
+        sprintf(Hname,"%s.M",troot);
         H = Load_Histogram(Hname);
-        sprintf(Hname,"%s.0",troot);
+        sprintf(Hname,"%s.D",troot);
         G = Load_Histogram(Hname);
 
         fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",R,MROOT,H->hist[1],G->hist[1],
                                                          H->hist[1]/(.01*G->hist[1]));
 
-        Free_Histogram(G);
         Free_Histogram(H);
 
-        sprintf(Hname,"%s.P",troot);   //  unique or instances?
+        sprintf(Hname,"%s.P",troot);
         H = Load_Histogram(Hname);
-        sprintf(Hname,"%s.1",troot);
-        G = Load_Histogram(Hname);
 
         fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",R,PROOT,H->hist[1],G->hist[1],
                                                        H->hist[1]/(.01*G->hist[1]));
@@ -1131,7 +1128,7 @@ int main(int argc, char *argv[])
         if (VERBOSE)
           fprintf(stderr,"\n Computing phasing blocks for assembly %s\n",R);
 
-        do_scaffs = phase_blocks(R, MROOT, PROOT, APRF[i], MPRF[i], PPRF[i], OUT, troot);
+        do_scaffs = phase_blocks(R, MROOT, PROOT, ATAB[i], MPRF[i], PPRF[i], OUT, troot);
 
         if (VERBOSE)
           fprintf(stderr,"\n Producing phased blob plot of the imputed blocks of assembly %s\n",R);
