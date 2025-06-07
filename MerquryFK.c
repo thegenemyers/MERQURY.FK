@@ -927,7 +927,7 @@ int main(int argc, char *argv[])
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[0],H->hist[1],SOLID_COUNT,
+        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",AROOT[0],RROOT,H->hist[1],SOLID_COUNT,
                                                   H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
@@ -988,19 +988,20 @@ int main(int argc, char *argv[])
 
         sprintf(Hname,"%s.0",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[0],H->hist[1],SOLID_COUNT,
+        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",AROOT[0],RROOT,H->hist[1],SOLID_COUNT,
                                                   H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.1",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"%s\tall\t%lld\t%lld\t%.2f\n",AROOT[1],H->hist[1],SOLID_COUNT,
+        fprintf(cps,"%s\t%s\t%lld\t%lld\t%.2f\n",AROOT[1],RROOT,H->hist[1],SOLID_COUNT,
                                                   H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
         sprintf(Hname,"%s.2",troot);
         H = Load_Histogram(Hname);
-        fprintf(cps,"both\tall\t%lld\t%lld\t%.2f\n",H->hist[1],SOLID_COUNT,
+        fprintf(cps,"%s+%s\t%s\t%lld\t%lld\t%.2f\n",AROOT[0],AROOT[1],RROOT,
+                                                    H->hist[1],SOLID_COUNT,
                                                     H->hist[1]/(.01*SOLID_COUNT));
         Free_Histogram(H);
 
