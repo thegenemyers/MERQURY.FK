@@ -752,15 +752,16 @@ int main(int argc, char *argv[])
       if (MAT != NULL)
         { char *x;
 
-          x   = PathnRoot(MAT,".ktab");
-          MAT = PathnRoot(x,".hap");
-          free(x);
-          x   = PathnRoot(PAT,".ktab");
-          PAT = PathnRoot(x,".hap");
+          MAT   = PathnRoot(MAT,".ktab");
+          x     = PathnRoot(MAT,".hap");
+          MROOT = Root(x,"");
           free(x);
 
-          MROOT = Root(MAT,"");
+          PAT   = PathnRoot(PAT,".ktab");
+          x     = PathnRoot(PAT,".hap");
           PROOT = Root(PAT,"");
+          free(x);
+
           if (strcmp(MROOT,PROOT) == 0)
             { fprintf(stderr,"%s: Parent haplotype tables have the same root name %s\n",
                              Prog_Name,MROOT);
@@ -791,8 +792,8 @@ int main(int argc, char *argv[])
 
       KMER = check_table(Catenate(READS,".ktab","",""),0);
       if (MAT != NULL)
-        { KMER = check_table(Catenate(MAT,".hap",".ktab",""),KMER);
-          KMER = check_table(Catenate(PAT,".hap",".ktab",""),KMER);
+        { KMER = check_table(Catenate(MAT,".ktab","",""),KMER);
+          KMER = check_table(Catenate(PAT,".ktab","",""),KMER);
         }
 
       if (VERBOSE)
@@ -1120,11 +1121,11 @@ int main(int argc, char *argv[])
         MPRF[i] = MyTemp(templateM[i]);
         PPRF[i] = MyTemp(templateP[i]);
 
-        sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s",
+        sprintf(command,"FastK -T%d -P%s -k%d -p:%s %s -N%s",
                         NTHREADS,SORT_PATH,KMER,MAT,A,MPRF[i]);
         SystemX(command);
 
-        sprintf(command,"FastK -T%d -P%s -k%d -p:%s.hap %s -N%s",
+        sprintf(command,"FastK -T%d -P%s -k%d -p:%s %s -N%s",
                         NTHREADS,SORT_PATH,KMER,PAT,A,PPRF[i]);
         SystemX(command);
 
